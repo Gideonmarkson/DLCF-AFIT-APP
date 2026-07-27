@@ -31,6 +31,3 @@ next-env.d.ts
 *.pem
 .idea/
 .vscode/
-
-# User requested: Do not push README.md
-README.md
