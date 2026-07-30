@@ -211,25 +211,26 @@ export default function ExcoRegistrationPage() {
               </div>
             </div>
 
-            {/* Submit Button */}
-            <Button type="submit" variant="primary" className="w-full text-xs font-bold gap-2 rounded-xl py-2.5 mt-2" disabled={loading}>
-              {loading ? 'Accrediting Exco Leadership...' : 'Register & Enter Student Exco Dashboard'} <ArrowRight className="w-4 h-4" />
-            </Button>
-          </form>
-        </CardContent>
-
-        <CardFooter className="flex flex-col space-y-2 text-center text-xs text-[#6B7280] pt-2">
-          <div>
-            Regular student member?{' '}
-            <Link href="/register" className="font-extrabold text-[#1D4ED8] hover:underline">
-              Standard Student Registration
-            </Link>
-          </div>
-          <div className="flex items-center justify-center gap-1 text-[10px] text-emerald-700 font-bold">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Student Executive Directorate Dashboard Access
-          </div>
-        </CardFooter>
-      </Card>
-    </div>
-  );
-}
+          {/* Submit Button */}
+              {error && <p className="text-xs text-red-600 font-bold text-center mb-2">{error}</p>}
+              <Button type="submit" variant="primary" className="w-full text-xs font-bold gap-2 rounded-xl py-2.5 mt-2" disabled={loading}>
+                {loading ? 'Accrediting Exco Leadership...' : 'Register & Enter Student Exco Dashboard'} <ArrowRight className="w-4 h-4" />
+              </Button>
+            </form>
+          </CardContent>
+    
+          <CardFooter className="flex flex-col space-y-2 text-center text-xs text-[#6B7280] pt-2">
+            <div>
+              Regular student member?{' '}
+              <Link href="/register" className="font-extrabold text-[#1D4ED8] hover:underline">
+                Standard Student Registration
+              </Link>
+            </div>
+            <div className="flex items-center justify-center gap-1 text-[10px] text-emerald-700 font-bold">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Student Executive Directorate Dashboard Access
+            </div>
+          </CardFooter>
+        </Card>
+      </div>
+      );
+    }
