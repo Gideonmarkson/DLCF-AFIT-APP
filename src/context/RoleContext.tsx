@@ -18,14 +18,15 @@ const RoleContext = createContext<RoleContextType>({
   setUserRole: () => {},
 });
 
-export function RoleProvider({ children }: { children: React.ReactNode }) {
-  const [userRole, setUserRole] = useState<RolePerspective>('GENERAL_STUDENT');
-
-  return (
-    <RoleContext.Provider value={{ userRole, setUserRole }}>
-      {children}
-    </RoleContext.Provider>
-  );
+export function RoleProvider({
+  children,
+  initialRole,
+}: {
+  children: React.ReactNode;
+  initialRole: RolePerspective;
+}) {
+  const [userRole, setUserRole] = useState<RolePerspective>(initialRole);
+  return <RoleContext.Provider value={{ userRole, setUserRole }}>{children}</RoleContext.Provider>;
 }
 
 export function useRole() {

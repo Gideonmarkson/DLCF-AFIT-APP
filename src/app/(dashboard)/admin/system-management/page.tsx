@@ -107,7 +107,7 @@ const MOCK_AUDIT_LOGS = [
 ];
 
 export default function SystemManagementPage() {
-  const { userRole, setUserRole } = useRole();
+  const { userRole } = useRole();
   const isAdmin = userRole === 'SYSTEM_ADMINISTRATOR';
 
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'USER_MANAGEMENT' | 'SECURITY' | 'BROADCAST' | 'AUDIT_LOGS'>('OVERVIEW');
@@ -157,36 +157,6 @@ export default function SystemManagementPage() {
     return matchesSearch && matchesRole;
   });
 
-  // STRICT ACCESS GUARD: Renders Access Denied if current user perspective is NOT System Administrator
-  if (!isAdmin) {
-    return (
-      <div className="p-8 max-w-2xl mx-auto space-y-6 text-center font-sans">
-        <div className="p-6 rounded-3xl bg-white border border-[#E2E8F0] shadow-md space-y-4">
-          <div className="w-16 h-16 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-200 shadow-sm">
-            <ShieldAlert className="w-8 h-8" />
-          </div>
-          <div>
-            <h1 className="text-xl font-extrabold text-[#1F2937]">System Administrator Access Required</h1>
-            <p className="text-xs text-[#6B7280] font-medium mt-1">
-              The System Administration Control Center is strictly restricted to System Administrators. Students, Exco Leaders, and Associate Coordinators cannot access this portal.
-            </p>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-[#EFF6FF] border border-[#1D4ED8]/20 text-xs text-[#1D4ED8] font-bold">
-            To view this page for demonstration, switch your perspective to <span className="underline">System Admin</span> in the top-right header role switcher.
-          </div>
-
-          <Button
-            onClick={() => setUserRole('SYSTEM_ADMINISTRATOR')}
-            variant="primary"
-            className="w-full text-xs font-bold gap-2 rounded-xl py-2.5"
-          >
-            <Server className="w-4 h-4" /> Switch to System Administrator Perspective
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6 font-sans">

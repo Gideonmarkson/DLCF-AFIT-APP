@@ -24,12 +24,11 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { RolePerspective, useRole } from '@/context/RoleContext';
+import { RolePerspective } from '@/context/RoleContext';
 import { Button } from '@/components/ui/button';
 
 export function MobileNav({ userRole = 'GENERAL_STUDENT' }: { userRole?: RolePerspective }) {
   const pathname = usePathname();
-  const { setUserRole } = useRole();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const isStaff = userRole === 'ASSOCIATE_COORDINATOR';
@@ -120,49 +119,7 @@ export function MobileNav({ userRole = 'GENERAL_STUDENT' }: { userRole?: RolePer
             </div>
 
             {/* Mobile Role Switcher Bar */}
-            <div className="space-y-1.5">
-              <label className="block text-[11px] font-extrabold text-[#6B7280] uppercase tracking-wider">
-                Switch Perspective (Mobile Test):
-              </label>
-              <div className="grid grid-cols-2 gap-1.5 p-1 rounded-2xl bg-[#EFF6FF] border border-[#1D4ED8]/20 text-xs">
-                <button
-                  onClick={() => setUserRole('GENERAL_STUDENT')}
-                  className={cn(
-                    'py-2 px-2 rounded-xl text-[11px] font-extrabold transition-all text-center',
-                    userRole === 'GENERAL_STUDENT' ? 'bg-[#1D4ED8] text-white shadow-xs' : 'text-[#6B7280]'
-                  )}
-                >
-                  Student
-                </button>
-                <button
-                  onClick={() => setUserRole('STUDENT_EXECUTIVE')}
-                  className={cn(
-                    'py-2 px-2 rounded-xl text-[11px] font-extrabold transition-all text-center',
-                    userRole === 'STUDENT_EXECUTIVE' ? 'bg-[#1D4ED8] text-white shadow-xs' : 'text-[#6B7280]'
-                  )}
-                >
-                  Exco Leader
-                </button>
-                <button
-                  onClick={() => setUserRole('ASSOCIATE_COORDINATOR')}
-                  className={cn(
-                    'py-2 px-2 rounded-xl text-[11px] font-extrabold transition-all text-center',
-                    userRole === 'ASSOCIATE_COORDINATOR' ? 'bg-[#1D4ED8] text-white shadow-xs' : 'text-[#6B7280]'
-                  )}
-                >
-                  Coordinator
-                </button>
-                <button
-                  onClick={() => setUserRole('SYSTEM_ADMINISTRATOR')}
-                  className={cn(
-                    'py-2 px-2 rounded-xl text-[11px] font-extrabold transition-all text-center',
-                    userRole === 'SYSTEM_ADMINISTRATOR' ? 'bg-[#1D4ED8] text-white shadow-xs' : 'text-[#6B7280]'
-                  )}
-                >
-                  System Admin
-                </button>
-              </div>
-            </div>
+            
 
             {/* Comprehensive Mobile Navigation List */}
             <div className="space-y-1">

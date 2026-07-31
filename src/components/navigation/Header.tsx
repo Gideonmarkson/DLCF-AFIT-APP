@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 interface HeaderProps {
   title?: string;
   userRole?: RolePerspective;
+  userName?: string;
+  userEmail?: string;
   onRoleChange?: (role: RolePerspective) => void;
 }
 
@@ -27,6 +29,8 @@ interface NotificationItem {
 export function Header({
   title = 'Saintly Intellectuals Hub',
   userRole = 'GENERAL_STUDENT',
+  userName = 'User',
+  userEmail = '',
   onRoleChange,
 }: HeaderProps) {
   const router = useRouter();
@@ -93,17 +97,11 @@ export function Header({
   }, []);
 
   const getProfileSnippet = () => {
-    if (isAdmin) {
-      return { initials: 'SA', name: 'Super Admin', email: 'admin@dlcf-afit.org', roleLabel: 'System Administrator' };
-    }
-    if (isStaff) {
-      return { initials: 'SO', name: 'Bro. Samuel', email: 'samuel.okosun@afit.edu.ng', roleLabel: 'Associate Coordinator' };
-    }
-    if (isExco) {
-      return { initials: 'BA', name: 'Sis. Blessing', email: 'blessing.adeyemi@gmail.com', roleLabel: 'Academic Director (Exco)' };
-    }
-    return { initials: 'DA', name: 'Bro. Daniel', email: 'daniel.adebayo@gmail.com', roleLabel: '300L Aeronautical' };
-  };
+   const roleLabel = isAdmin ? 'System Administrator' : isStaff ? 'Associate Coordinator' : isExco ? 'Student Executive' : 'Student';
+  const parts = userName.trim().split(/\s+/).filter(Boolean);
+  const initials = parts.length >= 2 ? (parts[0][0] + parts[1][0]).toUpperCase() : (userName.slice(0, 2) || 'U').toUpperCase();
+  return { initials, name: userName, email: userEmail, roleLabel };
+};
 
   const profile = getProfileSnippet();
 
@@ -140,57 +138,7 @@ export function Header({
       {/* Right Action Bar & Interactive Role Switcher */}
       <div className="flex items-center gap-2 sm:gap-3">
         {/* Desktop Role Switcher Pill */}
-        {onRoleChange && (
-          <div className="hidden md:flex items-center p-1 rounded-full bg-[#EFF6FF] border border-[#1D4ED8]/20 text-xs">
-            <button
-              onClick={() => onRoleChange('GENERAL_STUDENT')}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1 rounded-full font-extrabold transition-all text-xs',
-                userRole === 'GENERAL_STUDENT'
-                  ? 'bg-[#1D4ED8] text-white shadow-xs'
-                  : 'text-[#6B7280] hover:text-[#1D4ED8]'
-              )}
-            >
-              <User className="w-3.5 h-3.5" /> Student
-            </button>
-
-            <button
-              onClick={() => onRoleChange('STUDENT_EXECUTIVE')}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1 rounded-full font-extrabold transition-all text-xs',
-                userRole === 'STUDENT_EXECUTIVE'
-                  ? 'bg-[#1D4ED8] text-white shadow-xs'
-                  : 'text-[#6B7280] hover:text-[#1D4ED8]'
-              )}
-            >
-              <Award className="w-3.5 h-3.5" /> Student Exco
-            </button>
-
-            <button
-              onClick={() => onRoleChange('ASSOCIATE_COORDINATOR')}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1 rounded-full font-extrabold transition-all text-xs',
-                userRole === 'ASSOCIATE_COORDINATOR'
-                  ? 'bg-[#1D4ED8] text-white shadow-xs'
-                  : 'text-[#6B7280] hover:text-[#1D4ED8]'
-              )}
-            >
-              <ShieldCheck className="w-3.5 h-3.5" /> Associate Coordinator
-            </button>
-
-            <button
-              onClick={() => onRoleChange('SYSTEM_ADMINISTRATOR')}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1 rounded-full font-extrabold transition-all text-xs',
-                userRole === 'SYSTEM_ADMINISTRATOR'
-                  ? 'bg-[#1D4ED8] text-white shadow-xs'
-                  : 'text-[#6B7280] hover:text-[#1D4ED8]'
-              )}
-            >
-              <Server className="w-3.5 h-3.5" /> System Admin
-            </button>
-          </div>
-        )}
+        
 
         {/* Search Icon button */}
         <button className="p-2 sm:p-2.5 text-[#6B7280] hover:text-[#1D4ED8] rounded-full hover:bg-[#EFF6FF] transition-colors">

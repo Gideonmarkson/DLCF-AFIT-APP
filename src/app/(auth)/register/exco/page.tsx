@@ -26,16 +26,45 @@ export default function ExcoRegistrationPage() {
   const [cgpa, setCgpa] = useState('4.75');
   const [accreditationToken, setAccreditationToken] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Explicitly set role perspective for Student Executive
-    setUserRole('STUDENT_EXECUTIVE');
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      const response = await fetch('/register/privileged', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          registrationType: 'exco',
+          passcode: accreditationToken,
+          email,
+          password,
+          fullName,
+          phone,
+          department,
+          level,
+          cgpa,
+          excoOffice,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Account creation failed.');
+      }
+
+      setUserRole('STUDENT_EXECUTIVE');
+      router.push('/login');
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during registration.');
+    } finally {
       setLoading(false);
-      router.push('/dashboard');
-    }, 600);
+    }
   };
 
   return (

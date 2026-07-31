@@ -29,16 +29,43 @@ export default function AssociateCoordinatorRegistrationPage() {
   const [afitPosition, setAfitPosition] = useState('');
   const [authorizationKey, setAuthorizationKey] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Explicitly set role perspective for Associate Coordinator
-    setUserRole('ASSOCIATE_COORDINATOR');
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      const response = await fetch('/register/privileged', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          registrationType: 'coordinator',
+          passcode: authorizationKey,
+          email,
+          password,
+          fullName,
+          phone,
+          department: afitPosition,
+          level: null,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Account creation failed.');
+      }
+
+      setUserRole('ASSOCIATE_COORDINATOR');
+      router.push('/login');
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during registration.');
+    } finally {
       setLoading(false);
-      router.push('/dashboard');
-    }, 600);
+    }
   };
 
   return (
@@ -181,6 +208,10 @@ export default function AssociateCoordinatorRegistrationPage() {
                 />
               </div>
             </div>
+
+            {error && (
+              <p className="text-xs text-red-600 font-bold text-center mb-2">{error}</p>
+            )}
 
             {/* Submit Button */}
             <Button type="submit" variant="primary" className="w-full text-xs font-bold gap-2 rounded-xl py-2.5 mt-2" disabled={loading}>

@@ -4,13 +4,14 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, User, ArrowRight, ShieldCheck, GraduationCap, Award, Phone } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, ShieldCheck, GraduationCap, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { AFIT_DEPARTMENTS } from '@/lib/constants';
 import { useRole } from '@/context/RoleContext';
+import { createClient } from '@/lib/supabase/client';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -23,16 +24,43 @@ export default function RegisterPage() {
   const [department, setDepartment] = useState('B.Eng Aerospace Engineering');
   const [level, setLevel] = useState('300');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null); // State to catch registration errors
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Explicitly set role perspective for Standard Student
-    setUserRole('GENERAL_STUDENT');
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      const response = await fetch('/register/privileged', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          registrationType: 'student',
+          email,
+          password,
+          fullName,
+          phone,
+          department,
+          level,
+          matricNo,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'An error occurred during registration.');
+      }
+
+      setUserRole('GENERAL_STUDENT');
+      router.push('/login');
+    } catch (err: any) {
+      setError(err.message || 'An error occurred during registration.');
+    } finally {
       setLoading(false);
-      router.push('/dashboard');
-    }, 600);
+    }
   };
 
   return (
@@ -187,9 +215,16 @@ export default function RegisterPage() {
               </div>
             </div>
 
+            {/* Error Message Display */}
+            {error && (
+              <p className="text-xs text-red-600 font-bold text-center mb-2">
+                {error}
+              </p>
+            )}
+
             {/* Submit Button */}
             <Button type="submit" variant="primary" className="w-full text-xs font-bold gap-2 rounded-xl py-2.5 mt-2" disabled={loading}>
-              {loading ? 'Entering Student Portal...' : 'Register & Enter Student Dashboard'} <ArrowRight className="w-4 h-4" />
+              {loading ? 'Registering Account...' : 'Register & Enter Student Dashboard'} <ArrowRight className="w-4 h-4" />
             </Button>
           </form>
         </CardContent>
