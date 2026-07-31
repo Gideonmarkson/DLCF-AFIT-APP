@@ -101,8 +101,8 @@ npm run dev
 ```
 
 ### 4. Access URLs
-* **Local PC Browser**: `http://localhost:3005`
-* **Mobile Device Wi-Fi Access**: `http://192.168.0.3:3005`
+* **Local PC Browser**: `http://localhost:3000`
+* **Mobile Device Wi-Fi Access**: `http://192.168.0.3:3000`
 
 ---
 
