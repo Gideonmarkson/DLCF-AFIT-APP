@@ -300,68 +300,76 @@ export default function ProfileSetupPage() {
               </div>
             </div>
 
-            {/* Department & Level Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-              <div className="sm:col-span-8 space-y-1">
-                <label className="block text-xs font-extrabold text-[#1F2937]">AFIT Department</label>
-                <Select value={department} onChange={(e) => setDepartment(e.target.value)} className="text-xs">
-                  {AFIT_DEPARTMENTS.map((dept) => (
-                    <option key={dept.name} value={dept.name}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </Select>
-              </div>
+            {!isStaff && (
+              <>
+                {/* Department & Level Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                  <div className="sm:col-span-8 space-y-1">
+                    <label className="block text-xs font-extrabold text-[#1F2937]">AFIT Department</label>
+                    <Select value={department} onChange={(e) => setDepartment(e.target.value)} className="text-xs">
+                      {AFIT_DEPARTMENTS.map((dept) => (
+                        <option key={dept.name} value={dept.name}>
+                          {dept.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
 
-              <div className="sm:col-span-4 space-y-1">
-                <label className="block text-xs font-extrabold text-[#1F2937]">Level</label>
-                <Select value={level} onChange={(e) => setLevel(e.target.value)} className="text-xs font-bold">
-                  <option value="Remedial">Remedial</option>
-                  <option value="IJMB">IJMB</option>
-                  <option value="100">100L</option>
-                  <option value="200">200L</option>
-                  <option value="300">300L</option>
-                  <option value="400">400L</option>
-                  <option value="500">500L</option>
-                  <option value="ND1">ND 1</option>
-                  <option value="ND2">ND 2</option>
-                  <option value="HND1">HND 1</option>
-                  <option value="HND2">HND 2</option>
-                </Select>
-              </div>
-            </div>
+                  <div className="sm:col-span-4 space-y-1">
+                    <label className="block text-xs font-extrabold text-[#1F2937]">Level</label>
+                    <Select value={level} onChange={(e) => setLevel(e.target.value)} className="text-xs font-bold">
+                      <option value="Remedial">Remedial</option>
+                      <option value="IJMB">IJMB</option>
+                      <option value="100">100L</option>
+                      <option value="200">200L</option>
+                      <option value="300">300L</option>
+                      <option value="400">400L</option>
+                      <option value="500">500L</option>
+                      <option value="ND1">ND 1</option>
+                      <option value="ND2">ND 2</option>
+                      <option value="HND1">HND 1</option>
+                      <option value="HND2">HND 2</option>
+                    </Select>
+                  </div>
+                </div>
 
-            {/* Matric / Reg No */}
-            <div className="space-y-1">
-              <label className="block text-xs font-extrabold text-[#1F2937]">AFIT Matriculation / Reg No</label>
-              <div className="relative">
-                <GraduationCap className="absolute left-3 top-2.5 h-4 w-4 text-[#9CA3AF]" />
-                <Input
-                  value={matricNo}
-                  onChange={(e) => setMatricNo(e.target.value)}
-                  className="pl-9 text-xs font-mono uppercase"
-                  required
-                />
-              </div>
-            </div>
+                {/* Matric / Reg No */}
+                <div className="space-y-1">
+                  <label className="block text-xs font-extrabold text-[#1F2937]">AFIT Matriculation / Reg No</label>
+                  <div className="relative">
+                    <GraduationCap className="absolute left-3 top-2.5 h-4 w-4 text-[#9CA3AF]" />
+                    <Input
+                      value={matricNo}
+                      onChange={(e) => setMatricNo(e.target.value)}
+                      className="pl-9 text-xs font-mono uppercase"
+                    />
+                  </div>
+                </div>
 
-            {/* CGPA — self-editable so it can be corrected or updated each semester */}
-            <div className="space-y-1">
-              <label className="block text-xs font-extrabold text-[#1F2937]">Current CGPA</label>
-              <div className="relative">
-                <GraduationCap className="absolute left-3 top-2.5 h-4 w-4 text-[#9CA3AF]" />
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="5"
-                  value={cgpa}
-                  onChange={(e) => setCgpa(e.target.value)}
-                  className="pl-9 text-xs font-bold"
-                  required
-                />
+                {/* CGPA — self-editable so it can be corrected or updated each semester */}
+                <div className="space-y-1">
+                  <label className="block text-xs font-extrabold text-[#1F2937]">Current CGPA</label>
+                  <div className="relative">
+                    <GraduationCap className="absolute left-3 top-2.5 h-4 w-4 text-[#9CA3AF]" />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="5"
+                      value={cgpa}
+                      onChange={(e) => setCgpa(e.target.value)}
+                      className="pl-9 text-xs font-bold"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {isStaff && (
+              <div className="p-4 rounded-2xl bg-[#EFF6FF] border border-[#1D4ED8]/20 text-xs text-[#1D4ED8] font-bold">
+                A dedicated student lookup section — CGPA visibility and direct contact for the students you support — is coming here next. For now this page just covers your own contact details above.
               </div>
-            </div>
+            )}
 
             {/* MULTI-SELECT FELLOWSHIP UNITS & RESIDENCE */}
             <div className="space-y-3 pt-2 border-t border-[#E2E8F0]">

@@ -52,7 +52,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Could not find your profile.' }, { status: 400 });
     }
     if (currentProfile.role !== 'GENERAL_STUDENT') {
-      return NextResponse.json({ error: 'Only a General Student account can request this upgrade.' }, { status: 403 });
+      return NextResponse.json(
+        { error: `Only a General Student account can request this upgrade. Your account is currently: ${currentProfile.role}.` },
+        { status: 403 }
+      );
     }
 
     const update: Record<string, unknown> = {
