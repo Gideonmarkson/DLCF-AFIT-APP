@@ -351,7 +351,12 @@ export default function DashboardPage() {
           </h2>
 
           {/* Styled Scripture Card for Daily Manna */}
-          <div className="p-5 rounded-2xl bg-gradient-to-br from-[#1E3A8A] to-[#1D4ED8] text-white space-y-3 shadow-md">
+          <a
+            href="https://www.dailymanna.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block p-5 rounded-2xl bg-gradient-to-br from-[#1E3A8A] to-[#1D4ED8] text-white space-y-3 shadow-md hover:shadow-lg hover:brightness-110 transition-all cursor-pointer"
+          >
             <div className="flex items-center justify-between text-xs font-bold text-blue-200">
               <span className="flex items-center gap-1.5">
                 <BookOpen className="w-4 h-4 text-amber-300" /> DAILY MANNA
@@ -364,10 +369,11 @@ export default function DashboardPage() {
                 &ldquo;As for these four children, God gave them knowledge and skill in all learning and wisdom: and Daniel had understanding in all visions and dreams.&rdquo;
               </p>
             </div>
-            <div className="text-[11px] text-blue-200 pt-2 border-t border-white/10 font-medium">
-              Standing saintly in holiness and academic excellence. God grants supernatural wisdom to those who walk in His grace.
+            <div className="text-[11px] text-blue-200 pt-2 border-t border-white/10 font-medium flex items-center justify-between">
+              <span>Standing saintly in holiness and academic excellence.</span>
+              <span className="font-extrabold text-white shrink-0 ml-2">Read Today&apos;s Devotional →</span>
             </div>
-          </div>
+          </a>
 
           {/* MESSAGE REPOSITORY SECTION */}
           <div className="space-y-3 pt-1 border-t border-[#E2E8F0]">

@@ -27,16 +27,33 @@ export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isDashboardRoute = path.startsWith('/dashboard');
   const isAuthRoute = path.startsWith('/login') || path.startsWith('/register');
+  const isAdminRoute = path.startsWith('/admin');
 
-  if (isDashboardRoute && !user) {
+  if ((isDashboardRoute || isAdminRoute) && !user) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }
-  if (isAuthRoute && user && path !== '/register/privileged') {
+  if (isAuthRoute && user && path !== '/register/privileged' && path !== '/reset-password') {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
     return NextResponse.redirect(url);
   }
+
+  if (isAdminRoute && user) {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+    const role = profile?.role;
+
+    const deny = path.startsWith('/admin/system-management')
+      ? role !== 'SYSTEM_ADMINISTRATOR'
+      : !['STUDENT_EXECUTIVE', 'ASSOCIATE_COORDINATOR', 'SYSTEM_ADMINISTRATOR'].includes(role ?? '');
+
+    if (deny) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/dashboard';
+      return NextResponse.redirect(url);
+    }
+  }
+
   return supabaseResponse;
 }

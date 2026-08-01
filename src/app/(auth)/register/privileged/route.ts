@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendWelcomeEmail } from '@/lib/resend';
 
 const PASSCODES: Record<string, string | undefined> = {
   exco: process.env.EXCO_PASSCODE,
@@ -117,6 +118,11 @@ export async function POST(req: NextRequest) {
       await admin.auth.admin.deleteUser(authData.user.id);
       return NextResponse.json({ error: profileError.message }, { status: 400 });
     }
+
+    // Never let a mail-provider hiccup fail a real account creation that already succeeded.
+    sendWelcomeEmail({ toEmail: email as string, fullName: fullName as string, role }).catch((err) =>
+      console.error('Welcome email failed (non-blocking):', err)
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

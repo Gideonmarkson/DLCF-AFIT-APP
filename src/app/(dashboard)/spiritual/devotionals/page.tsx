@@ -26,14 +26,21 @@ export default function DevotionalsPage() {
 
   return (
     <div className="space-y-6 font-sans">
-      <div>
-        <h1 className="text-xl font-extrabold text-[#1F2937] flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-[#1D4ED8]" />
-          Devotionals &amp; Bible Study Schedule Builder
-        </h1>
-        <p className="text-xs text-[#6B7280]">
-          Combine daily spiritual nurture with personalized academic schedule creation tailored for AFIT coursework.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-extrabold text-[#1F2937] flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-[#1D4ED8]" />
+            Devotionals &amp; Bible Study Schedule Builder
+          </h1>
+          <p className="text-xs text-[#6B7280]">
+            Combine daily spiritual nurture with personalized academic schedule creation tailored for AFIT coursework.
+          </p>
+        </div>
+        <a href="https://www.dailymanna.app/" target="_blank" rel="noopener noreferrer">
+          <Button type="button" variant="primary" className="gap-2 text-xs font-bold rounded-xl whitespace-nowrap">
+            <BookOpen className="w-4 h-4" /> Open Daily Devotional Guide
+          </Button>
+        </a>
       </div>
 
       <DevotionalBanner />

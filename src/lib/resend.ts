@@ -3,6 +3,37 @@ import { Resend } from 'resend';
 const resendApiKey = process.env.RESEND_API_KEY || '';
 export const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
+export async function sendWelcomeEmail(params: { toEmail: string; fullName: string; role: string }) {
+  if (!resend) {
+    console.log(`[Resend Email Mock] Welcome email sent to ${params.toEmail}`);
+    return { success: true, mock: true };
+  }
+
+  const roleLabel =
+    params.role === 'STUDENT_EXECUTIVE' ? 'Student Executive' :
+    params.role === 'ASSOCIATE_COORDINATOR' ? 'Associate Coordinator' :
+    'Student';
+
+  try {
+    const data = await resend.emails.send({
+      from: 'DLCF AFIT <onboarding@resend.dev>',
+      to: [params.toEmail],
+      subject: 'Welcome to the DLCF AFIT Saintly Intellectuals Hub',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #ffffff; color: #1F2937;">
+          <h2 style="color: #1D4ED8;">Welcome, ${params.fullName}!</h2>
+          <p>Your DLCF AFIT Hub account has been created as a <strong>${roleLabel}</strong>.</p>
+          <p>You can now sign in and access course registration, confidential counseling, devotionals, and the fellowship directory.</p>
+          <p style="margin-top: 20px; font-size: 12px; color: #6B7280;">If you didn't request this account, you can ignore this email.</p>
+        </div>
+      `,
+    });
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error sending welcome email:', error);
+    return { success: false, error };
+  }
+}
 export async function sendCounselingNotification(params: {
   advisorEmail: string;
   advisorName: string;
