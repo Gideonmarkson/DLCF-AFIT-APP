@@ -8,25 +8,30 @@ export type RolePerspective =
   | 'ASSOCIATE_COORDINATOR'
   | 'SYSTEM_ADMINISTRATOR';
 
-interface RoleContextType {
-  userRole: RolePerspective;
-  setUserRole: (role: RolePerspective) => void;
+export interface UserProfile {
+  fullName: string;
+  email: string;
+  cgpa: number;
+  currentLevel: string | null;
+  department: string | null;
+  executiveOffice: string | null;
 }
 
-const RoleContext = createContext<RoleContextType>({
-  userRole: 'GENERAL_STUDENT',
-  setUserRole: () => {},
-});
+interface RoleContextType {
+  userRole: RolePerspective;
+  profile: UserProfile;
+}
 
-export function RoleProvider({
-  children,
-  initialRole,
-}: {
-  children: React.ReactNode;
-  initialRole: RolePerspective;
-}) {
-  const [userRole, setUserRole] = useState<RolePerspective>(initialRole);
-  return <RoleContext.Provider value={{ userRole, setUserRole }}>{children}</RoleContext.Provider>;
+const defaultProfile: UserProfile = {
+  fullName: 'User', email: '', cgpa: 0, currentLevel: null, department: null, executiveOffice: null,
+};
+
+const RoleContext = createContext<RoleContextType>({ userRole: 'GENERAL_STUDENT', profile: defaultProfile });
+
+export function RoleProvider({ children, initialRole, profile }: { children: React.ReactNode; initialRole: RolePerspective; profile: UserProfile }) {
+  const [userRole] = useState<RolePerspective>(initialRole);
+  const [userProfile] = useState<UserProfile>(profile);
+  return <RoleContext.Provider value={{ userRole, profile: userProfile }}>{children}</RoleContext.Provider>;
 }
 
 export function useRole() {

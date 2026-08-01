@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useRole } from '@/context/RoleContext';
 
 const ASSOCIATE_COORDINATOR_ROLES = [
   'Sub-Group Associate coordinator',
@@ -20,7 +19,6 @@ const ASSOCIATE_COORDINATOR_ROLES = [
 
 export default function AssociateCoordinatorRegistrationPage() {
   const router = useRouter();
-  const { setUserRole } = useRole();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -59,7 +57,6 @@ export default function AssociateCoordinatorRegistrationPage() {
         throw new Error(result.error || 'Account creation failed.');
       }
 
-      setUserRole('ASSOCIATE_COORDINATOR');
       router.push('/login');
     } catch (err: any) {
       setError(err.message || 'An error occurred during registration.');

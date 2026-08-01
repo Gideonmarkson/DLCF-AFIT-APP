@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { useRole } from '@/context/RoleContext';
 
 export default function DashboardPage() {
-  const { userRole } = useRole();
+  const { userRole, profile } = useRole();
   const [likes, setLikes] = useState<Record<string, number>>({ p1: 14, p2: 8, p3: 21 });
   const [showCounselingForm, setShowCounselingForm] = useState(false);
 
@@ -52,12 +52,12 @@ export default function DashboardPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-xl font-extrabold text-[#1F2937] tracking-tight">
-                    Student Executive Portal (Academic Directorate)
+                    Student Executive Portal {profile.executiveOffice ? `(${profile.executiveOffice})` : ''}
                   </h1>
                   <Badge variant="role">Student Exco</Badge>
                 </div>
                 <p className="text-xs text-[#6B7280] font-medium mt-0.5">
-                  Welcome Sister Blessing Adeyemi (400L Mechanical Engineering, CGPA 4.75). Managing academic mentorship &amp; fellowship unit performance.
+                  Welcome {profile.fullName} ({profile.currentLevel ? `${profile.currentLevel}L ` : ''}{profile.department ?? ''}, CGPA {profile.cgpa.toFixed(2)}). Managing {profile.executiveOffice ?? 'academic mentorship & fellowship unit'} performance.
                 </p>
               </div>
             </div>
@@ -120,7 +120,7 @@ export default function DashboardPage() {
                   <Badge variant="role">Associate Coordinator</Badge>
                 </div>
                 <p className="text-xs text-[#6B7280] font-medium mt-0.5">
-                  Welcome Pastor / Bro. Samuel Okosun. Managing student counseling tickets, academic interventions, and fellowship patronage.
+                  Welcome {profile.fullName}. Managing student counseling tickets, academic interventions, and fellowship patronage.
                 </p>
               </div>
             </div>

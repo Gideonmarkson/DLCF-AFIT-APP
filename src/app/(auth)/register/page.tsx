@@ -10,12 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { AFIT_DEPARTMENTS } from '@/lib/constants';
-import { useRole } from '@/context/RoleContext';
 import { createClient } from '@/lib/supabase/client';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { setUserRole } = useRole();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -54,7 +52,6 @@ export default function RegisterPage() {
         throw new Error(result.error || 'An error occurred during registration.');
       }
 
-      setUserRole('GENERAL_STUDENT');
       router.push('/login');
     } catch (err: any) {
       setError(err.message || 'An error occurred during registration.');

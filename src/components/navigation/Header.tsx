@@ -8,6 +8,7 @@ import { Bell, Search, ChevronDown, User, ShieldCheck, Award, Server, LogOut, Ch
 import { cn } from '@/lib/utils';
 import { RolePerspective } from '@/context/RoleContext';
 import { Badge } from '@/components/ui/badge';
+import { createClient } from '@/lib/supabase/client';
 
 interface HeaderProps {
   title?: string;
@@ -109,9 +110,12 @@ export function Header({
     setNotifications(notifications.map((n) => ({ ...n, unread: false })));
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     setIsProfileOpen(false);
+    const supabase = createClient();
+    await supabase.auth.signOut();
     router.push('/login');
+    router.refresh();
   };
 
   return (

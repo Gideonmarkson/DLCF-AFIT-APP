@@ -11,11 +11,9 @@ import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AFIT_DEPARTMENTS, DLCF_EXCO_PORTFOLIOS } from '@/lib/constants';
-import { useRole } from '@/context/RoleContext';
 
 export default function ExcoRegistrationPage() {
   const router = useRouter();
-  const { setUserRole } = useRole();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -58,7 +56,6 @@ export default function ExcoRegistrationPage() {
         throw new Error(result.error || 'Account creation failed.');
       }
 
-      setUserRole('STUDENT_EXECUTIVE');
       router.push('/login');
     } catch (err: any) {
       setError(err.message || 'An error occurred during registration.');

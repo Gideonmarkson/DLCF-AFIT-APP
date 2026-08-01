@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import {
   LayoutDashboard,
   GraduationCap,
@@ -29,6 +30,14 @@ import { Button } from '@/components/ui/button';
 
 export function MobileNav({ userRole = 'GENERAL_STUDENT' }: { userRole?: RolePerspective }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const isStaff = userRole === 'ASSOCIATE_COORDINATOR';
@@ -260,11 +269,14 @@ export function MobileNav({ userRole = 'GENERAL_STUDENT' }: { userRole?: RolePer
 
             {/* Logout / Sign In Redirect */}
             <div className="pt-2 border-t border-[#E2E8F0]">
-              <Link href="/login" onClick={() => setIsDrawerOpen(false)}>
-                <Button variant="outline" className="w-full text-xs font-bold gap-2 rounded-xl text-rose-600 border-rose-200 hover:bg-rose-50">
-                  <LogOut className="w-4 h-4" /> Sign Out of Account
-                </Button>
-              </Link>
+              <Button
+                type="button"
+                onClick={() => { setIsDrawerOpen(false); handleSignOut(); }}
+                variant="outline"
+                className="w-full text-xs font-bold gap-2 rounded-xl text-rose-600 border-rose-200 hover:bg-rose-50"
+              >
+                <LogOut className="w-4 h-4" /> Sign Out of Account
+              </Button>
             </div>
 
           </div>
