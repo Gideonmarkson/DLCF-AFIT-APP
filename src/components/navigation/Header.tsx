@@ -6,9 +6,9 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Bell, Search, ChevronDown, User, ShieldCheck, Award, Server, LogOut, Check, HeartHandshake, GraduationCap, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
 import { RolePerspective } from '@/context/RoleContext';
 import { Badge } from '@/components/ui/badge';
-import { createClient } from '@/lib/supabase/client';
 
 interface HeaderProps {
   title?: string;

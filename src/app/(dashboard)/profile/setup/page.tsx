@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import {
   User,
   Camera,
@@ -23,18 +24,29 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useRole } from '@/context/RoleContext';
-import { AFIT_DEPARTMENTS, FELLOWSHIP_UNITS } from '@/lib/constants';
+import { AFIT_DEPARTMENTS, FELLOWSHIP_UNITS, DLCF_EXCO_PORTFOLIOS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
 
 export default function ProfileSetupPage() {
-  const { userRole } = useRole();
+  const router = useRouter();
+  const { userRole, profile } = useRole();
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [fullName, setFullName] = useState('Brother Daniel Adebayo');
-  const [email, setEmail] = useState('daniel.adebayo@gmail.com');
-  const [phone, setPhone] = useState('+234 801 234 5678');
-  const [matricNo, setMatricNo] = useState('AFIT/ENG/AEE/2021/042');
-  const [department, setDepartment] = useState('B.Eng Aerospace Engineering');
-  const [level, setLevel] = useState('300');
+  const [fullName, setFullName] = useState(profile.fullName);
+  const [email] = useState(profile.email);
+  const [phone, setPhone] = useState(profile.phone ?? '');
+  const [matricNo, setMatricNo] = useState(profile.matricNumber ?? '');
+  const [department, setDepartment] = useState(profile.department ?? AFIT_DEPARTMENTS[0]?.name ?? '');
+  const [level, setLevel] = useState(profile.currentLevel ?? '300');
+  const [cgpa, setCgpa] = useState(String(profile.cgpa ?? 0));
+  const [error, setError] = useState('');
+
+  // Role-upgrade state (General Students only)
+  const [upgradeType, setUpgradeType] = useState<'exco' | 'coordinator'>('exco');
+  const [excoOffice, setExcoOffice] = useState('General Coordinator');
+  const [upgradePasscode, setUpgradePasscode] = useState('');
+  const [upgradeError, setUpgradeError] = useState('');
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
   
   // Multi-select state for Fellowship Units
   const [selectedUnits, setSelectedUnits] = useState<string[]>(['Academics', 'Media']);
@@ -70,14 +82,63 @@ export default function ProfileSetupPage() {
     setAvatarPreview(null);
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     setLoading(true);
-    setTimeout(() => {
+
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setError('Your session expired — please sign in again.');
       setLoading(false);
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2500);
-    }, 600);
+      return;
+    }
+
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({
+        full_name: fullName,
+        phone_number: phone,
+        department,
+        current_level: level,
+        matric_number: matricNo || null,
+        cgpa: Number(cgpa) || 0,
+      })
+      .eq('id', user.id);
+
+    setLoading(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    setSaveSuccess(true);
+    router.refresh();
+    setTimeout(() => setSaveSuccess(false), 2500);
+  };
+
+  const handleUpgradeRole = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpgradeError('');
+    setUpgradeLoading(true);
+    try {
+      const res = await fetch('/api/account/upgrade-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          upgradeType,
+          passcode: upgradePasscode,
+          excoOffice: upgradeType === 'exco' ? excoOffice : undefined,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Upgrade failed');
+      router.refresh();
+    } catch (err) {
+      setUpgradeError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setUpgradeLoading(false);
+    }
   };
 
   return (
@@ -217,11 +278,11 @@ export default function ProfileSetupPage() {
                   <Input
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-9 text-xs"
-                    required
+                    disabled
+                    className="pl-9 text-xs bg-[#F8FAFC] text-[#6B7280] cursor-not-allowed"
                   />
                 </div>
+                <p className="text-[10px] text-[#9CA3AF]">Your sign-in email can&apos;t be changed here yet.</p>
               </div>
 
               <div className="space-y-1">
@@ -284,6 +345,24 @@ export default function ProfileSetupPage() {
               </div>
             </div>
 
+            {/* CGPA — self-editable so it can be corrected or updated each semester */}
+            <div className="space-y-1">
+              <label className="block text-xs font-extrabold text-[#1F2937]">Current CGPA</label>
+              <div className="relative">
+                <GraduationCap className="absolute left-3 top-2.5 h-4 w-4 text-[#9CA3AF]" />
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="5"
+                  value={cgpa}
+                  onChange={(e) => setCgpa(e.target.value)}
+                  className="pl-9 text-xs font-bold"
+                  required
+                />
+              </div>
+            </div>
+
             {/* MULTI-SELECT FELLOWSHIP UNITS & RESIDENCE */}
             <div className="space-y-3 pt-2 border-t border-[#E2E8F0]">
               <div className="space-y-1.5">
@@ -328,7 +407,12 @@ export default function ProfileSetupPage() {
                   className="text-xs"
                 />
               </div>
+              <p className="text-[10px] text-[#9CA3AF]">
+                Fellowship unit(s) and residence aren&apos;t saved yet — those two need a small database change first. Everything else on this page saves for real.
+              </p>
             </div>
+
+            {error && <p className="text-xs text-red-600 font-bold text-center">{error}</p>}
 
             {saveSuccess && (
               <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 flex items-center gap-2">
@@ -345,6 +429,60 @@ export default function ProfileSetupPage() {
         </div>
 
       </form>
+
+      {/* Apply for an Executive or Associate Coordinator role — General Students only */}
+      {userRole === 'GENERAL_STUDENT' && (
+        <Card className="border-[#E2E8F0] bg-white p-6 space-y-4 shadow-xs">
+          <div>
+            <h2 className="text-base font-extrabold text-[#1F2937] flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-[#1D4ED8]" /> Apply for Executive / Associate Coordinator Access
+            </h2>
+            <p className="text-xs text-[#6B7280]">
+              Already accredited by the fellowship? Enter the passcode you were given — this upgrades your existing
+              account, it does not create a new one.
+            </p>
+          </div>
+
+          <form onSubmit={handleUpgradeRole} className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+            <div className="space-y-1">
+              <label className="block text-xs font-extrabold text-[#1F2937]">Applying As</label>
+              <Select value={upgradeType} onChange={(e) => setUpgradeType(e.target.value as 'exco' | 'coordinator')} className="text-xs">
+                <option value="exco">Student Executive</option>
+                <option value="coordinator">Associate Coordinator</option>
+              </Select>
+            </div>
+
+            {upgradeType === 'exco' && (
+              <div className="space-y-1">
+                <label className="block text-xs font-extrabold text-[#1F2937]">Executive Office</label>
+                <Select value={excoOffice} onChange={(e) => setExcoOffice(e.target.value)} className="text-xs">
+                  {DLCF_EXCO_PORTFOLIOS.map((office: string) => (
+                    <option key={office} value={office}>{office}</option>
+                  ))}
+                </Select>
+              </div>
+            )}
+
+            <div className="space-y-1 sm:col-span-2">
+              <label className="block text-xs font-extrabold text-[#1F2937]">Accreditation Passcode</label>
+              <Input
+                type="password"
+                value={upgradePasscode}
+                onChange={(e) => setUpgradePasscode(e.target.value)}
+                placeholder="Given to you by the fellowship leadership"
+                className="text-xs"
+                required
+              />
+            </div>
+
+            {upgradeError && <p className="text-xs text-red-600 font-bold sm:col-span-2">{upgradeError}</p>}
+
+            <Button type="submit" variant="primary" disabled={upgradeLoading} className="sm:col-span-2 text-xs font-bold gap-2 rounded-xl py-2.5">
+              {upgradeLoading ? 'Verifying...' : 'Upgrade My Account'}
+            </Button>
+          </form>
+        </Card>
+      )}
     </div>
   );
 }

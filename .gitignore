@@ -21,7 +21,6 @@ yarn-error.log*
 .env.example
 
 # API routes & handlers
-src/app/api/
 
 # vercel
 .vercel

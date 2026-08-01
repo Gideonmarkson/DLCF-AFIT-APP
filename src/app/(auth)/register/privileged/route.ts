@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
       level,
       cgpa,
       excoOffice,
+      matricNo,
     } = payload;
 
     if (!email || !password || !fullName || !department) {
@@ -104,6 +105,7 @@ export async function POST(req: NextRequest) {
       phone_number: phone ?? null,
       department,
       current_level: registrationType === 'student' || registrationType === 'exco' ? normalizeLevel(level) : null,
+      matric_number: registrationType === 'student' ? matricNo ?? null : null,
       role,
       executive_office: registrationType === 'exco' ? excoOffice ?? null : null,
       cgpa: registrationType === 'exco' ? Number(cgpa) || 0 : 0,

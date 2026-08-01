@@ -11,6 +11,8 @@ export type RolePerspective =
 export interface UserProfile {
   fullName: string;
   email: string;
+  phone: string | null;
+  matricNumber: string | null;
   cgpa: number;
   currentLevel: string | null;
   department: string | null;
@@ -23,12 +25,27 @@ interface RoleContextType {
 }
 
 const defaultProfile: UserProfile = {
-  fullName: 'User', email: '', cgpa: 0, currentLevel: null, department: null, executiveOffice: null,
+  fullName: 'User',
+  email: '',
+  phone: null,
+  matricNumber: null,
+  cgpa: 0,
+  currentLevel: null,
+  department: null,
+  executiveOffice: null,
 };
 
 const RoleContext = createContext<RoleContextType>({ userRole: 'GENERAL_STUDENT', profile: defaultProfile });
 
-export function RoleProvider({ children, initialRole, profile }: { children: React.ReactNode; initialRole: RolePerspective; profile: UserProfile }) {
+export function RoleProvider({
+  children,
+  initialRole,
+  profile,
+}: {
+  children: React.ReactNode;
+  initialRole: RolePerspective;
+  profile: UserProfile;
+}) {
   const [userRole] = useState<RolePerspective>(initialRole);
   const [userProfile] = useState<UserProfile>(profile);
   return <RoleContext.Provider value={{ userRole, profile: userProfile }}>{children}</RoleContext.Provider>;
