@@ -106,31 +106,6 @@ npm run dev
 
 ---
 
-## 📁 Repository Project Structure
-
-```text
-├── src/
-│   ├── app/
-│   │   ├── (auth)/             # Pre-login authentication & registration portals
-│   │   │   ├── login/
-│   │   │   └── register/       # Student, Exco & Coordinator registration pages
-│   │   ├── (dashboard)/        # Post-login role dashboard routes
-│   │   │   ├── academic/       # Course registration, peer network, results & past questions
-│   │   │   ├── admin/          # Governance queue & System Admin Control Center
-│   │   │   ├── fellowship/     # Exco directory, coordinators, forums & media
-│   │   │   ├── profile/        # User profile setup & avatar photo uploader
-│   │   │   └── spiritual/      # Daily devotionals & pastoral counseling
-│   │   └── page.tsx            # Public welcome landing page
-│   ├── components/             # Reusable UI components, Header, Sidebar & MobileNav
-│   ├── context/                # RoleContext state manager (RBAC)
-│   └── lib/                    # AFIT department lists, exco portfolios & constants
-├── supabase/
-│   └── migrations/             # PostgreSQL database migration scripts & RLS schema
-└── public/                     # Static media, logo & open Holy Bible realistic photos
-```
-
----
-
 ## 📄 License & Attribution
 
 © 2026 **Deeper Life Campus Fellowship (DLCF), Air Force Institute of Technology (AFIT), Kaduna**.  
