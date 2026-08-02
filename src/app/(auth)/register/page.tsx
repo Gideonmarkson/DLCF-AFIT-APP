@@ -4,13 +4,12 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, User, ArrowRight, ShieldCheck, GraduationCap, Phone } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, ShieldCheck, GraduationCap, Phone, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { AFIT_DEPARTMENTS } from '@/lib/constants';
-import { createClient } from '@/lib/supabase/client';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -18,11 +17,12 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [matricNo, setMatricNo] = useState('');
   const [department, setDepartment] = useState('B.Eng Aerospace Engineering');
   const [level, setLevel] = useState('300');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null); // State to catch registration errors
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +47,16 @@ export default function RegisterPage() {
         }),
       });
 
-      const result = await response.json();
+      const contentType = response.headers.get('content-type');
+      let result: any = {};
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const text = await response.text();
+        console.error('Non-JSON server response:', text);
+        throw new Error('Registration failed. Please check your credentials or Supabase keys in .env.local.');
+      }
+
       if (!response.ok) {
         throw new Error(result.error || 'An error occurred during registration.');
       }
@@ -202,13 +211,22 @@ export default function RegisterPage() {
               <div className="relative">
                 <Lock className="absolute left-3 top-2.5 h-4 w-4 text-[#9CA3AF]" />
                 <Input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-9 text-xs"
+                  className="pl-9 pr-10 text-xs"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-2.5 text-[#9CA3AF] hover:text-[#1D4ED8] transition-colors focus:outline-none"
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
             </div>
 

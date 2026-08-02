@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, User, ArrowRight, ShieldCheck, Key, Phone, Building } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, ShieldCheck, Key, Phone, Building, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -23,9 +23,11 @@ export default function AssociateCoordinatorRegistrationPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [roleTitle, setRoleTitle] = useState('Sub-Group Associate coordinator');
   const [afitPosition, setAfitPosition] = useState('');
   const [authorizationKey, setAuthorizationKey] = useState('');
+  const [showPasscode, setShowPasscode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,7 +54,16 @@ export default function AssociateCoordinatorRegistrationPage() {
         }),
       });
 
-      const result = await response.json();
+      const contentType = response.headers.get('content-type');
+      let result: any = {};
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const text = await response.text();
+        console.error('Non-JSON server response:', text);
+        throw new Error('Registration failed. Please check your credentials or Supabase keys in .env.local.');
+      }
+
       if (!response.ok) {
         throw new Error(result.error || 'Account creation failed.');
       }
@@ -180,13 +191,22 @@ export default function AssociateCoordinatorRegistrationPage() {
               <div className="relative">
                 <Key className="absolute left-3 top-2.5 h-4 w-4 text-[#9CA3AF]" />
                 <Input
-                  type="password"
+                  type={showPasscode ? 'text' : 'password'}
                   placeholder="DLCF-STAFF-PASSCODE-2026"
                   value={authorizationKey}
                   onChange={(e) => setAuthorizationKey(e.target.value)}
-                  className="pl-9 text-xs font-mono uppercase"
+                  className="pl-9 pr-10 text-xs font-mono uppercase"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPasscode(!showPasscode)}
+                  className="absolute right-3 top-2.5 text-[#9CA3AF] hover:text-[#1D4ED8] transition-colors focus:outline-none"
+                  tabIndex={-1}
+                  aria-label={showPasscode ? 'Hide passcode' : 'Show passcode'}
+                >
+                  {showPasscode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
             </div>
 
@@ -196,13 +216,22 @@ export default function AssociateCoordinatorRegistrationPage() {
               <div className="relative">
                 <Lock className="absolute left-3 top-2.5 h-4 w-4 text-[#9CA3AF]" />
                 <Input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-9 text-xs"
+                  className="pl-9 pr-10 text-xs"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-2.5 text-[#9CA3AF] hover:text-[#1D4ED8] transition-colors focus:outline-none"
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
             </div>
 

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, User, ArrowRight, ShieldCheck, Award, Key, GraduationCap, Phone } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, ShieldCheck, Award, Key, GraduationCap, Phone, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -18,11 +18,13 @@ export default function ExcoRegistrationPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [excoOffice, setExcoOffice] = useState('General Coordinator');
   const [department, setDepartment] = useState('B.Eng Aerospace Engineering');
   const [level, setLevel] = useState('400');
   const [cgpa, setCgpa] = useState('4.75');
   const [accreditationToken, setAccreditationToken] = useState('');
+  const [showPasscode, setShowPasscode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,7 +53,16 @@ export default function ExcoRegistrationPage() {
         }),
       });
 
-      const result = await response.json();
+      const contentType = response.headers.get('content-type');
+      let result: any = {};
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const text = await response.text();
+        console.error('Non-JSON server response:', text);
+        throw new Error('Registration failed. Please check your credentials or Supabase keys in .env.local.');
+      }
+
       if (!response.ok) {
         throw new Error(result.error || 'Account creation failed.');
       }
@@ -210,13 +221,22 @@ export default function ExcoRegistrationPage() {
                 <div className="relative">
                   <Key className="absolute left-3 top-2.5 h-4 w-4 text-[#9CA3AF]" />
                   <Input
-                    type="password"
+                    type={showPasscode ? 'text' : 'password'}
                     placeholder="DLCF-EXCO-2026"
                     value={accreditationToken}
                     onChange={(e) => setAccreditationToken(e.target.value)}
-                    className="pl-9 text-xs font-mono uppercase"
+                    className="pl-9 pr-8 text-xs font-mono uppercase"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasscode(!showPasscode)}
+                    className="absolute right-2.5 top-2.5 text-[#9CA3AF] hover:text-[#1D4ED8] transition-colors focus:outline-none"
+                    tabIndex={-1}
+                    aria-label={showPasscode ? 'Hide passcode' : 'Show passcode'}
+                  >
+                    {showPasscode ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  </button>
                 </div>
               </div>
             </div>
@@ -227,36 +247,45 @@ export default function ExcoRegistrationPage() {
               <div className="relative">
                 <Lock className="absolute left-3 top-2.5 h-4 w-4 text-[#9CA3AF]" />
                 <Input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-9 text-xs"
+                  className="pl-9 pr-10 text-xs"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-2.5 text-[#9CA3AF] hover:text-[#1D4ED8] transition-colors focus:outline-none"
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
             </div>
 
-          {/* Submit Button */}
-              {error && <p className="text-xs text-red-600 font-bold text-center mb-2">{error}</p>}
-              <Button type="submit" variant="primary" className="w-full text-xs font-bold gap-2 rounded-xl py-2.5 mt-2" disabled={loading}>
-                {loading ? 'Accrediting Exco Leadership...' : 'Register & Enter Student Exco Dashboard'} <ArrowRight className="w-4 h-4" />
-              </Button>
-            </form>
-          </CardContent>
-    
-          <CardFooter className="flex flex-col space-y-2 text-center text-xs text-[#6B7280] pt-2">
-            <div>
-              Regular student member?{' '}
-              <Link href="/register" className="font-extrabold text-[#1D4ED8] hover:underline">
-                Standard Student Registration
-              </Link>
-            </div>
-            <div className="flex items-center justify-center gap-1 text-[10px] text-emerald-700 font-bold">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Student Executive Directorate Dashboard Access
-            </div>
-          </CardFooter>
-        </Card>
-      </div>
-      );
-    }
+            {/* Submit Button */}
+            {error && <p className="text-xs text-red-600 font-bold text-center mb-2">{error}</p>}
+            <Button type="submit" variant="primary" className="w-full text-xs font-bold gap-2 rounded-xl py-2.5 mt-2" disabled={loading}>
+              {loading ? 'Accrediting Exco Leadership...' : 'Register & Enter Student Exco Dashboard'} <ArrowRight className="w-4 h-4" />
+            </Button>
+          </form>
+        </CardContent>
+  
+        <CardFooter className="flex flex-col space-y-2 text-center text-xs text-[#6B7280] pt-2">
+          <div>
+            Regular student member?{' '}
+            <Link href="/register" className="font-extrabold text-[#1D4ED8] hover:underline">
+              Standard Student Registration
+            </Link>
+          </div>
+          <div className="flex items-center justify-center gap-1 text-[10px] text-emerald-700 font-bold">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Student Executive Directorate Dashboard Access
+          </div>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}
