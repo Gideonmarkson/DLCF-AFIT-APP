@@ -387,7 +387,7 @@ export default function ProfileSetupPage() {
 
             {isStaff && (
               <div className="p-4 rounded-2xl bg-[#EFF6FF] border border-[#1D4ED8]/20 text-xs text-[#1D4ED8] font-bold">
-                A dedicated student lookup section — CGPA visibility and direct contact for the students you support — is coming here next. For now this page just covers your own contact details above.
+                Looking for student CGPA and contact info? That&apos;s now under Coordinator Governance in the sidebar — this page just covers your own contact details above.
               </div>
             )}
 

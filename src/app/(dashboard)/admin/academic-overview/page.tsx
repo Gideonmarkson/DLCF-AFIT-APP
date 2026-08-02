@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { InterventionTable } from '@/components/admin/InterventionTable';
+import { StudentDirectory } from '@/components/admin/StudentDirectory';
 import { ShieldAlert, Users, TrendingDown, Award } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
@@ -58,6 +59,7 @@ export default function AcademicOverviewPage() {
       </div>
 
       <InterventionTable />
+      <StudentDirectory />
     </div>
   );
 }
