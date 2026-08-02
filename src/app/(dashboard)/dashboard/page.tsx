@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Headphones,
@@ -22,17 +22,47 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { CounselingFormModal } from '@/components/spiritual/CounselingFormModal';
+import { WelcomeHero } from '@/components/dashboard/WelcomeHero';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useRole } from '@/context/RoleContext';
+import { createClient } from '@/lib/supabase/client';
+
+interface TicketRow {
+  id: string;
+  subject: string;
+  status: string;
+  is_anonymous: boolean;
+  student_id: string;
+  profiles?: { full_name: string | null } | null;
+}
 
 export default function DashboardPage() {
   const { userRole, profile } = useRole();
   const [likes, setLikes] = useState<Record<string, number>>({ p1: 14, p2: 8, p3: 21 });
   const [showCounselingForm, setShowCounselingForm] = useState(false);
+  const [tickets, setTickets] = useState<TicketRow[]>([]);
+  const [ticketsLoaded, setTicketsLoaded] = useState(false);
 
   const isExco = userRole === 'STUDENT_EXECUTIVE';
   const isStaff = userRole === 'ASSOCIATE_COORDINATOR';
+
+  useEffect(() => {
+    const load = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const query = isStaff
+        ? supabase.from('counseling_requests').select('id, subject, status, is_anonymous, student_id, profiles(full_name)').order('created_at', { ascending: false }).limit(2)
+        : supabase.from('counseling_requests').select('id, subject, status, is_anonymous, student_id').eq('student_id', user.id).order('created_at', { ascending: false }).limit(2);
+
+      const { data } = await query;
+      setTickets((data as unknown as TicketRow[]) ?? []);
+      setTicketsLoaded(true);
+    };
+    load();
+  }, [isStaff]);
 
   const toggleLike = (id: string) => {
     setLikes((prev) => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
@@ -40,7 +70,9 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 font-sans">
-      
+
+      <WelcomeHero firstName={profile.fullName.split(' ').filter(Boolean).pop() ?? ''} />
+
       {/* ================= STUDENT EXCO GOVERNANCE OVERVIEW (Rendered ONLY for Student Excos) ================= */}
       {isExco && (
         <div className="p-6 rounded-3xl bg-gradient-to-r from-white via-[#EFF6FF] to-white border border-[#E2E8F0] shadow-xs space-y-4 animate-fadeIn">
@@ -133,37 +165,35 @@ export default function DashboardPage() {
           </div>
 
           {/* Associate Coordinator Incoming Tickets Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 rounded-2xl bg-[#EFF6FF]/70 border border-[#1D4ED8]/20 flex items-center justify-between">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono font-extrabold text-[#1D4ED8]">Ticket #T-101</span>
-                  <Badge variant="gold" className="text-[10px]">REQUIRES ADVISOR RESPONSE</Badge>
-                </div>
-                <div className="text-xs font-extrabold text-[#1F2937]">Academic Pressure &amp; Spiritual Direction in 300L</div>
-                <div className="text-[11px] text-[#6B7280] font-medium">Submitted by: Student Member (Bro. Daniel Adebayo)</div>
-              </div>
-              <Link href="/spiritual/counseling">
-                <Button size="sm" variant="primary" className="text-xs gap-1">
-                  Respond <ArrowRight className="w-3.5 h-3.5" />
-                </Button>
-              </Link>
+          {!ticketsLoaded ? (
+            <p className="text-xs text-[#6B7280]">Loading tickets...</p>
+          ) : tickets.length === 0 ? (
+            <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#6B7280] font-medium text-center">
+              No counseling tickets have been submitted yet.
             </div>
-
-            <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono font-extrabold text-emerald-700">Ticket #T-100</span>
-                  <Badge variant="emerald" className="text-[10px]">RESOLVED BY ADVISOR</Badge>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {tickets.map((t) => (
+                <div key={t.id} className="p-4 rounded-2xl bg-[#EFF6FF]/70 border border-[#1D4ED8]/20 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono font-extrabold text-[#1D4ED8]">#{t.id.slice(0, 8)}</span>
+                      <Badge variant="gold" className="text-[10px]">{t.status}</Badge>
+                    </div>
+                    <div className="text-xs font-extrabold text-[#1F2937]">{t.subject}</div>
+                    <div className="text-[11px] text-[#6B7280] font-medium">
+                      {t.is_anonymous ? 'Anonymous submission' : `Submitted by: ${t.profiles?.full_name ?? 'Student'}`}
+                    </div>
+                  </div>
+                  <Link href="/spiritual/counseling">
+                    <Button size="sm" variant="primary" className="text-xs gap-1">
+                      Respond <ArrowRight className="w-3.5 h-3.5" />
+                    </Button>
+                  </Link>
                 </div>
-                <div className="text-xs font-extrabold text-[#1F2937]">Personal Prayer &amp; Guidance Request</div>
-                <div className="text-[11px] text-emerald-800 font-medium">Responded by: Sis. Comfort Adebayo (Associate Coordinator)</div>
-              </div>
-              <div className="flex items-center gap-1 text-xs text-emerald-700 font-extrabold">
-                <UserCheck className="w-4 h-4" /> Answered
-              </div>
+              ))}
             </div>
-          </div>
+          )}
         </div>
       ) : (
         /* ================= STUDENT CONFIDENTIAL COUNSELING PORTAL (Rendered ONLY for Students) ================= */
@@ -199,38 +229,31 @@ export default function DashboardPage() {
             <div className="pt-2 animate-fadeIn">
               <CounselingFormModal onSuccess={() => setShowCounselingForm(false)} />
             </div>
+          ) : !ticketsLoaded ? (
+            <p className="text-xs text-[#6B7280]">Loading your tickets...</p>
+          ) : tickets.length === 0 ? (
+            <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#6B7280] font-medium text-center">
+              You haven&apos;t submitted a counseling request yet.
+            </div>
           ) : (
             /* Active Counseling Ticket Status Summary Banner */
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-              <div className="p-4 rounded-2xl bg-[#EFF6FF]/70 border border-[#1D4ED8]/20 flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono font-extrabold text-[#1D4ED8]">Ticket #T-101</span>
-                    <Badge variant="gold" className="text-[10px]">IN PROGRESS</Badge>
+              {tickets.map((t) => (
+                <div key={t.id} className="p-4 rounded-2xl bg-[#EFF6FF]/70 border border-[#1D4ED8]/20 flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono font-extrabold text-[#1D4ED8]">#{t.id.slice(0, 8)}</span>
+                      <Badge variant="gold" className="text-[10px]">{t.status}</Badge>
+                    </div>
+                    <div className="text-xs font-extrabold text-[#1F2937]">{t.subject}</div>
                   </div>
-                  <div className="text-xs font-extrabold text-[#1F2937]">Academic Pressure &amp; Spiritual Direction in 300L</div>
-                  <div className="text-[11px] text-[#6B7280] font-medium">Assigned to: Bro. Samuel Okosun (Associate Advisor)</div>
+                  <Link href="/spiritual/counseling">
+                    <Button size="sm" variant="outline" className="text-xs gap-1 border-[#1D4ED8] text-[#1D4ED8]">
+                      View <ArrowRight className="w-3.5 h-3.5" />
+                    </Button>
+                  </Link>
                 </div>
-                <Link href="/spiritual/counseling">
-                  <Button size="sm" variant="outline" className="text-xs gap-1 border-[#1D4ED8] text-[#1D4ED8]">
-                    View <ArrowRight className="w-3.5 h-3.5" />
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono font-extrabold text-emerald-700">Ticket #T-100</span>
-                    <Badge variant="emerald" className="text-[10px]">RESOLVED</Badge>
-                  </div>
-                  <div className="text-xs font-extrabold text-[#1F2937]">Personal Prayer Guidance Request</div>
-                  <div className="text-[11px] text-emerald-800 font-medium">Assigned to: Sis. Comfort Adebayo (Associate Advisor)</div>
-                </div>
-                <div className="flex items-center gap-1 text-xs text-emerald-700 font-extrabold">
-                  <ShieldCheck className="w-4 h-4" /> Private
-                </div>
-              </div>
+              ))}
             </div>
           )}
         </div>
@@ -239,108 +262,16 @@ export default function DashboardPage() {
       {/* 3-Column Main Dashboard Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* ================= COLUMN 1: YOUR PEER MENTORING NETWORK ================= */}
-        <div className="bg-white rounded-3xl p-6 border border-[#E2E8F0] shadow-xs space-y-6">
+        {/* ================= COLUMN 1: PEER MENTORING NETWORK ================= */}
+        <div className="bg-white rounded-3xl p-6 border border-[#E2E8F0] shadow-xs space-y-4">
           <h2 className="text-sm font-extrabold text-[#1F2937] tracking-tight uppercase">
-            YOUR PEER MENTORING NETWORK (AEE 311)
+            Peer Mentoring Network
           </h2>
-
-          {/* SENIOR MENTORS SECTION */}
-          <div className="space-y-4">
-            <h3 className="text-xs font-extrabold text-[#1D4ED8] uppercase tracking-wider">
-              SENIOR MENTORS (AEE 311)
-            </h3>
-
-            <div className="grid grid-cols-2 gap-4">
-              {/* Senior Mentor 1 */}
-              <div className="p-4 rounded-2xl bg-[#EFF6FF]/60 border border-[#E2E8F0] text-center flex flex-col items-center space-y-2">
-                <div className="relative w-14 h-14 rounded-full bg-[#1D4ED8] text-white font-extrabold text-base flex items-center justify-center ring-4 ring-amber-400 shadow-md">
-                  DA
-                </div>
-                <div>
-                  <div className="text-xs font-extrabold text-[#1F2937]">Brother Daniel Adebayo</div>
-                  <div className="text-[10px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full inline-block mt-1">
-                    Grade A
-                  </div>
-                </div>
-                <button className="w-full py-1.5 px-3 rounded-full border border-[#1D4ED8] text-[#1D4ED8] font-extrabold text-xs hover:bg-[#1D4ED8] hover:text-white transition-colors">
-                  Message
-                </button>
-              </div>
-
-              {/* Senior Mentor 2 */}
-              <div className="p-4 rounded-2xl bg-[#EFF6FF]/60 border border-[#E2E8F0] text-center flex flex-col items-center space-y-2">
-                <div className="relative w-14 h-14 rounded-full bg-[#1F2937] text-white font-extrabold text-base flex items-center justify-center ring-4 ring-amber-400 shadow-md">
-                  FO
-                </div>
-                <div>
-                  <div className="text-xs font-extrabold text-[#1F2937]">Sister Faith Ogundele</div>
-                  <div className="text-[10px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full inline-block mt-1">
-                    Grade B
-                  </div>
-                </div>
-                <button className="w-full py-1.5 px-3 rounded-full border border-[#1D4ED8] text-[#1D4ED8] font-extrabold text-xs hover:bg-[#1D4ED8] hover:text-white transition-colors">
-                  Message
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* ACTIVE CLASS PEERS SECTION */}
-          <div className="space-y-3 pt-2 border-t border-[#E2E8F0]">
-            <h3 className="text-xs font-extrabold text-[#1D4ED8] uppercase tracking-wider">
-              ACTIVE CLASS PEERS (AEE 311)
-            </h3>
-
-            <div className="space-y-3">
-              {/* Peer 1 */}
-              <div className="flex items-center justify-between p-2.5 rounded-xl hover:bg-[#EFF6FF] transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-[#1D4ED8] text-white font-bold flex items-center justify-center text-xs shadow-xs">
-                    BA
-                  </div>
-                  <div>
-                    <div className="text-xs font-extrabold text-[#1F2937]">Brother Adebayo</div>
-                    <div className="text-[10px] text-[#6B7280] font-semibold">300L Classmate</div>
-                  </div>
-                </div>
-                <button className="py-1 px-3 rounded-full border border-[#1D4ED8] text-[#1D4ED8] font-bold text-xs hover:bg-[#1D4ED8] hover:text-white transition-colors">
-                  Study Pair
-                </button>
-              </div>
-
-              {/* Peer 2 */}
-              <div className="flex items-center justify-between p-2.5 rounded-xl hover:bg-[#EFF6FF] transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-[#1F2937] text-white font-bold flex items-center justify-center text-xs shadow-xs">
-                    SF
-                  </div>
-                  <div>
-                    <div className="text-xs font-extrabold text-[#1F2937]">Sister Faith</div>
-                    <div className="text-[10px] text-[#6B7280] font-semibold">300L Classmate</div>
-                  </div>
-                </div>
-                <button className="py-1 px-3 rounded-full border border-[#1D4ED8] text-[#1D4ED8] font-bold text-xs hover:bg-[#1D4ED8] hover:text-white transition-colors">
-                  Study Pair
-                </button>
-              </div>
-
-              {/* Peer 3 */}
-              <div className="flex items-center justify-between p-2.5 rounded-xl hover:bg-[#EFF6FF] transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-[#D97706] text-white font-bold flex items-center justify-center text-xs shadow-xs">
-                    SO
-                  </div>
-                  <div>
-                    <div className="text-xs font-extrabold text-[#1F2937]">Sister Ogundele</div>
-                    <div className="text-[10px] text-[#6B7280] font-semibold">300L Classmate</div>
-                  </div>
-                </div>
-                <button className="py-1 px-3 rounded-full border border-[#1D4ED8] text-[#1D4ED8] font-bold text-xs hover:bg-[#1D4ED8] hover:text-white transition-colors">
-                  Study Pair
-                </button>
-              </div>
-            </div>
+          <div className="p-6 rounded-2xl bg-[#F8FAFC] border border-dashed border-[#E2E8F0] text-center space-y-1.5">
+            <Users className="w-6 h-6 text-[#9CA3AF] mx-auto" />
+            <p className="text-xs text-[#6B7280] font-medium">
+              Mentor pairing isn&apos;t built yet — this will show your real matched senior once that feature ships.
+            </p>
           </div>
         </div>
 
@@ -408,117 +339,15 @@ export default function DashboardPage() {
         </div>
 
         {/* ================= COLUMN 3: DEPARTMENTAL FORUM ================= */}
-        <div className="bg-white rounded-3xl p-6 border border-[#E2E8F0] shadow-xs space-y-5">
+        <div className="bg-white rounded-3xl p-6 border border-[#E2E8F0] shadow-xs space-y-4">
           <h2 className="text-sm font-extrabold text-[#1F2937] tracking-tight uppercase">
-            DEPARTMENTAL FORUM (Aerospace Engineering 300L)
+            Departmental Forum
           </h2>
-
-          {/* Posts Feed */}
-          <div className="space-y-4">
-            {/* Post 1 */}
-            <div className="p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-[#1D4ED8] text-white font-extrabold text-xs flex items-center justify-center shadow-xs">
-                    SO
-                  </div>
-                  <div>
-                    <div className="text-xs font-extrabold text-[#1F2937]">Brother Samuel Okoh</div>
-                    <div className="text-[10px] text-[#6B7280] font-semibold">3 months ago</div>
-                  </div>
-                </div>
-                <button className="text-[#9CA3AF] hover:text-[#1F2937]">
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
-              </div>
-              <p className="text-xs text-[#4B5563] font-medium leading-relaxed">
-                Brother discuss who is wrong and who is right to understand our ongoing course, and connect at the table.
-              </p>
-              <div className="flex items-center gap-4 text-xs text-[#6B7280] pt-2 border-t border-[#E2E8F0]">
-                <button onClick={() => toggleLike('p1')} className="flex items-center gap-1 hover:text-[#1D4ED8] font-bold">
-                  <ThumbsUp className="w-3.5 h-3.5 text-[#1D4ED8]" /> {likes.p1}
-                </button>
-                <button className="flex items-center gap-1 hover:text-[#1F2937]">
-                  <MessageSquare className="w-3.5 h-3.5" />
-                </button>
-                <button className="flex items-center gap-1 hover:text-[#1F2937] ml-auto">
-                  <Bookmark className="w-3.5 h-3.5" />
-                </button>
-                <button className="flex items-center gap-1 hover:text-[#1F2937]">
-                  <ThumbsDown className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Post 2 */}
-            <div className="p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-[#1F2937] text-white font-extrabold text-xs flex items-center justify-center shadow-xs">
-                    SO
-                  </div>
-                  <div>
-                    <div className="text-xs font-extrabold text-[#1F2937]">Brother Samuel Okoh</div>
-                    <div className="text-[10px] text-[#6B7280] font-semibold">3 months ago</div>
-                  </div>
-                </div>
-                <button className="text-[#9CA3AF] hover:text-[#1F2937]">
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
-              </div>
-              <p className="text-xs text-[#4B5563] font-medium leading-relaxed">
-                Ongoing discussions regarding aerodynamics with Aerospace Engineering 300L course problem sets.
-              </p>
-              <div className="flex items-center gap-4 text-xs text-[#6B7280] pt-2 border-t border-[#E2E8F0]">
-                <button onClick={() => toggleLike('p2')} className="flex items-center gap-1 hover:text-[#1D4ED8] font-bold">
-                  <ThumbsUp className="w-3.5 h-3.5 text-[#1D4ED8]" /> {likes.p2}
-                </button>
-                <button className="flex items-center gap-1 hover:text-[#1F2937]">
-                  <MessageSquare className="w-3.5 h-3.5" />
-                </button>
-                <button className="flex items-center gap-1 hover:text-[#1F2937] ml-auto">
-                  <Bookmark className="w-3.5 h-3.5" />
-                </button>
-                <button className="flex items-center gap-1 hover:text-[#1F2937]">
-                  <ThumbsDown className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Post 3 */}
-            <div className="p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-2xs space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-full bg-[#D97706] text-white font-extrabold text-xs flex items-center justify-center shadow-xs">
-                    SO
-                  </div>
-                  <div>
-                    <div className="text-xs font-extrabold text-[#1F2937]">Brother Samuel Okoh</div>
-                    <div className="text-[10px] text-[#6B7280] font-semibold">3 months ago</div>
-                  </div>
-                </div>
-                <button className="text-[#9CA3AF] hover:text-[#1F2937]">
-                  <MoreHorizontal className="w-4 h-4" />
-                </button>
-              </div>
-              <p className="text-xs text-[#4B5563] font-medium leading-relaxed">
-                Thanks to all ongoing discussion regarding aerodynamics and fellowship study groups on this dashboard.
-              </p>
-              <div className="flex items-center gap-4 text-xs text-[#6B7280] pt-2 border-t border-[#E2E8F0]">
-                <button onClick={() => toggleLike('p3')} className="flex items-center gap-1 hover:text-[#1D4ED8] font-bold">
-                  <ThumbsUp className="w-3.5 h-3.5 text-[#1D4ED8]" /> {likes.p3}
-                </button>
-                <button className="flex items-center gap-1 hover:text-[#1F2937]">
-                  <MessageSquare className="w-3.5 h-3.5" />
-                </button>
-                <button className="flex items-center gap-1 hover:text-[#1F2937] ml-auto">
-                  <Bookmark className="w-3.5 h-3.5" />
-                </button>
-                <button className="flex items-center gap-1 hover:text-[#1F2937]">
-                  <ThumbsDown className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
+          <div className="p-6 rounded-2xl bg-[#F8FAFC] border border-dashed border-[#E2E8F0] text-center space-y-1.5">
+            <MessageSquare className="w-6 h-6 text-[#9CA3AF] mx-auto" />
+            <p className="text-xs text-[#6B7280] font-medium">
+              No posts yet — the forum is ready for real discussion once the first person posts.
+            </p>
           </div>
         </div>
 

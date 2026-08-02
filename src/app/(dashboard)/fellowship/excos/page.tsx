@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Award, GraduationCap, Mail, Phone, Calendar, Search } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DLCF_EXCO_PORTFOLIOS } from '@/lib/constants';
+import { createClient } from '@/lib/supabase/client';
 
 interface ExcoMember {
   id: string;
@@ -20,80 +21,37 @@ interface ExcoMember {
   phone: string;
 }
 
-const STUDENT_EXCOS: ExcoMember[] = [
-  {
-    id: 'exco-1',
-    name: 'Brother Samuel Okoh',
-    portfolio: 'General Coordinator',
-    department: 'B.Eng Aerospace Engineering',
-    level: '500L',
-    cgpa: 4.82,
-    bio: 'Oversees overall fellowship operations, executive synergy, and campus fellowship representation at AFIT.',
-    initials: 'SO',
-    phone: '+234 801 234 5678',
-  },
-  {
-    id: 'exco-2',
-    name: 'Brother Victor Jude',
-    portfolio: 'Assistant General Coordinator',
-    department: 'B.Eng Mechanical Engineering',
-    level: '400L',
-    cgpa: 4.65,
-    bio: 'Assists in general fellowship administration, program planning, and unit coordination.',
-    initials: 'VJ',
-    phone: '+234 802 345 6789',
-  },
-  {
-    id: 'exco-3',
-    name: 'Sister Blessing Adeyemi',
-    portfolio: 'Academic Director',
-    department: 'B.Eng Electrical & Electronics Engineering',
-    level: '400L',
-    cgpa: 4.75,
-    bio: 'Leads tutorial programs, peer-mentoring graphs, exam prep workshops, and academic tracking for brethren.',
-    initials: 'BA',
-    phone: '+234 803 456 7890',
-  },
-  {
-    id: 'exco-4',
-    name: 'Sister Comfort Ogundele',
-    portfolio: 'Sister Welfare Coordinator',
-    department: 'B.Sc Computer Science',
-    level: '400L',
-    cgpa: 4.60,
-    bio: 'Coordinates sisters welfare, hostel visitations, mentorship, and sisterhood retreat activities.',
-    initials: 'CO',
-    phone: '+234 804 567 8901',
-  },
-  {
-    id: 'exco-5',
-    name: 'Brother Emmanuel Chukwu',
-    portfolio: 'Prayer Coordinator',
-    department: 'B.Eng Civil Engineering',
-    level: '400L',
-    cgpa: 4.55,
-    bio: 'Leads fellowship prayer meetings, intercession squads, and spiritual vigilance retreats.',
-    initials: 'EC',
-    phone: '+234 805 678 9012',
-  },
-  {
-    id: 'exco-6',
-    name: 'Sister Grace Lawson',
-    portfolio: 'Choir Master',
-    department: 'B.Sc Cyber Security',
-    level: '300L',
-    cgpa: 4.45,
-    bio: 'Directs Calvary Voices Choir ministrations, music rehearsals, and special service worship.',
-    initials: 'GL',
-    phone: '+234 806 789 0123',
-  },
-];
 
 export default function StudentExcosPage() {
+  const [excos, setExcos] = useState<ExcoMember[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPortfolio, setSelectedPortfolio] = useState('ALL');
 
-  const filteredExcos = STUDENT_EXCOS.filter((exco) => {
+  useEffect(() => {
+    const load = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, executive_office, department, current_level, cgpa, phone_number')
+        .eq('role', 'STUDENT_EXECUTIVE');
+      setExcos(
+        (data ?? []).map((p) => ({
+          id: p.id,
+          name: p.full_name ?? 'Unnamed',
+          portfolio: p.executive_office ?? 'Executive',
+          department: p.department ?? '—',
+          level: p.current_level ? `${p.current_level}L` : '—',
+          cgpa: p.cgpa ?? 0,
+          bio: `Serving as ${p.executive_office ?? 'a Student Executive'} for the fellowship.`,
+          initials: (p.full_name ?? 'U U').split(' ').filter(Boolean).slice(0, 2).map((w: string) => w[0]).join('').toUpperCase(),
+          phone: p.phone_number ?? '',
+        }))
+      );
+    };
+    load();
+  }, []);
+
+  const filteredExcos = excos.filter((exco) => {
     const matchesSearch =
       exco.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       exco.portfolio.toLowerCase().includes(searchTerm.toLowerCase()) ||

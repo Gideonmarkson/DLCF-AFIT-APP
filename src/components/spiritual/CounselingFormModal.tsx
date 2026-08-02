@@ -5,8 +5,8 @@ import { Shield, Send, CheckCircle2, Lock } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { createClient } from '@/lib/supabase/client';
 
 interface CounselingFormModalProps {
   onSuccess?: () => void;
@@ -15,15 +15,31 @@ interface CounselingFormModalProps {
 export function CounselingFormModal({ onSuccess }: CounselingFormModalProps) {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
-  const [advisorId, setAdvisorId] = useState('advisor-1');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState('');
   const [isPending, startTransition] = useTransition();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     startTransition(async () => {
-      await new Promise((res) => setTimeout(res, 800));
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setError('Your session expired — please sign in again.');
+        return;
+      }
+      const { error: insertError } = await supabase.from('counseling_requests').insert({
+        student_id: user.id,
+        subject,
+        message,
+        is_anonymous: isAnonymous,
+      });
+      if (insertError) {
+        setError(insertError.message);
+        return;
+      }
       setIsSubmitted(true);
       if (onSuccess) onSuccess();
     });
@@ -46,15 +62,6 @@ export function CounselingFormModal({ onSuccess }: CounselingFormModalProps) {
 
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-extrabold text-[#1F2937] mb-1">Target Fellowship Advisor</label>
-            <Select value={advisorId} onChange={(e) => setAdvisorId(e.target.value)}>
-              <option value="advisor-1">Pastor / Bro. Samuel Okosun (Associate Coordinator - Spirituals)</option>
-              <option value="advisor-2">Sis. Comfort Adebayo (Associate Coordinator - Sisters/Counseling)</option>
-              <option value="advisor-3">Prof. Dr. A. K. Mohammed (Patron Advisor - Academics)</option>
-            </Select>
-          </div>
-
           <div>
             <label className="block text-xs font-extrabold text-[#1F2937] mb-1">Subject / Category</label>
             <Input
@@ -95,6 +102,8 @@ export function CounselingFormModal({ onSuccess }: CounselingFormModalProps) {
             />
           </div>
 
+          {error && <p className="text-xs text-red-600 font-bold">{error}</p>}
+
           <div className="flex items-center justify-between pt-2">
             <span className="text-[11px] text-[#6B7280] font-semibold">
               Protected under Supabase RLS row policies
@@ -113,7 +122,7 @@ export function CounselingFormModal({ onSuccess }: CounselingFormModalProps) {
           {isSubmitted && (
             <div className="flex items-center gap-2 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
               <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
-              Request sent confidentially! An email alert has been dispatched to your chosen advisor via Resend API.
+              Request sent confidentially! Any on-duty Associate Coordinator can now see and respond to this.
             </div>
           )}
         </form>

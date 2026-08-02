@@ -1,59 +1,54 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserCheck, Eye, ShieldAlert, Filter } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { MentorAssignModal } from './MentorAssignModal';
+import { createClient } from '@/lib/supabase/client';
 
 export interface FlaggedStudent {
   id: string;
   fullName: string;
   matricNumber: string;
   department: string;
-  level: number;
+  level: string;
   cgpa: number;
   assignedMentorName?: string;
   isSlipUploaded: boolean;
 }
 
-const INITIAL_FLAGGED_STUDENTS: FlaggedStudent[] = [
-  {
-    id: 'std-1',
-    fullName: 'Brother Joseph Chukwu',
-    matricNumber: 'AFIT/ENG/AEE/2021/042',
-    department: 'Aeronautical Engineering',
-    level: 300,
-    cgpa: 2.15,
-    isSlipUploaded: true,
-  },
-  {
-    id: 'std-2',
-    fullName: 'Sister Grace Lawson',
-    matricNumber: 'AFIT/ENG/MET/2022/108',
-    department: 'Mechanical Engineering',
-    level: 200,
-    cgpa: 2.40,
-    assignedMentorName: 'Brother Daniel Adebayo (500L)',
-    isSlipUploaded: true,
-  },
-  {
-    id: 'std-3',
-    fullName: 'Brother Emmanuel Peters',
-    matricNumber: 'AFIT/ENG/EEE/2021/095',
-    department: 'Electrical Engineering',
-    level: 300,
-    cgpa: 1.98,
-    isSlipUploaded: false,
-  },
-];
 
 export function InterventionTable() {
   const [departmentFilter, setDepartmentFilter] = useState('ALL');
-  const [flaggedStudents, setFlaggedStudents] = useState<FlaggedStudent[]>(INITIAL_FLAGGED_STUDENTS);
+  const [flaggedStudents, setFlaggedStudents] = useState<FlaggedStudent[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<FlaggedStudent | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, matric_number, department, current_level, cgpa')
+        .eq('role', 'GENERAL_STUDENT')
+        .lt('cgpa', 2.5)
+        .gt('cgpa', 0);
+      setFlaggedStudents(
+        (data ?? []).map((p) => ({
+          id: p.id,
+          fullName: p.full_name ?? 'Unnamed',
+          matricNumber: p.matric_number ?? '—',
+          department: p.department ?? '—',
+          level: p.current_level ?? '—',
+          cgpa: p.cgpa ?? 0,
+          isSlipUploaded: false,
+        }))
+      );
+    };
+    load();
+  }, []);
 
   const filteredStudents = flaggedStudents.filter((std) => {
     if (departmentFilter === 'ALL') return true;

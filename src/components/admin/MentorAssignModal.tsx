@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Award, UserCheck, X, CheckCircle2 } from 'lucide-react';
 import { FlaggedStudent } from './InterventionTable';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { createClient } from '@/lib/supabase/client';
 
 interface MentorAssignModalProps {
   student: FlaggedStudent;
@@ -13,18 +14,42 @@ interface MentorAssignModalProps {
   onAssigned: (mentorName: string) => void;
 }
 
-const HIGH_ACHIEVING_SENIORS = [
-  { id: 'm-1', name: 'Brother Daniel Adebayo', dept: 'Aeronautical Engineering', level: 500, cgpa: 4.82 },
-  { id: 'm-2', name: 'Sister Faith Ogundele', dept: 'Mechanical Engineering', level: 400, cgpa: 4.65 },
-  { id: 'm-3', name: 'Brother Samuel Okoh', dept: 'Electrical Engineering', level: 500, cgpa: 4.75 },
-];
+interface MentorOption {
+  id: string;
+  name: string;
+  dept: string;
+  level: string;
+  cgpa: number;
+}
 
 export function MentorAssignModal({ student, onClose, onAssigned }: MentorAssignModalProps) {
-  const [selectedMentorId, setSelectedMentorId] = useState(HIGH_ACHIEVING_SENIORS[0].id);
+  const [seniors, setSeniors] = useState<MentorOption[]>([]);
+  const [selectedMentorId, setSelectedMentorId] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 
+  useEffect(() => {
+    const load = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, department, current_level, cgpa')
+        .in('role', ['GENERAL_STUDENT', 'STUDENT_EXECUTIVE'])
+        .gte('cgpa', 4.0);
+      const mapped = (data ?? []).map((p) => ({
+        id: p.id,
+        name: p.full_name ?? 'Unnamed',
+        dept: p.department ?? '—',
+        level: p.current_level ?? '—',
+        cgpa: p.cgpa ?? 0,
+      }));
+      setSeniors(mapped);
+      if (mapped.length > 0) setSelectedMentorId(mapped[0].id);
+    };
+    load();
+  }, []);
+
   const handleConfirm = () => {
-    const mentor = HIGH_ACHIEVING_SENIORS.find((m) => m.id === selectedMentorId);
+    const mentor = seniors.find((m) => m.id === selectedMentorId);
     if (mentor) {
       setIsSuccess(true);
       setTimeout(() => {
@@ -64,7 +89,7 @@ export function MentorAssignModal({ student, onClose, onAssigned }: MentorAssign
             onChange={(e) => setSelectedMentorId(e.target.value)}
             className="text-xs font-semibold"
           >
-            {HIGH_ACHIEVING_SENIORS.map((m) => (
+            {seniors.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name} — {m.dept} ({m.level}L) | CGPA: {m.cgpa.toFixed(2)}
               </option>

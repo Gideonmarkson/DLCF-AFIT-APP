@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 import {
   ShieldCheck,
   UserCheck,
@@ -34,87 +35,43 @@ interface CoordinatorMember {
   phone: string;
 }
 
-const ASSOCIATE_COORDINATORS: CoordinatorMember[] = [
-  {
-    id: 'coord-1',
-    name: 'Pastor / Bro. Samuel Okosun',
-    officialTitle: 'Sub-Group Associate coordinator',
-    afitPosition: 'Senior AFIT Academic Staff Patron',
-    fellowshipFocus: 'Overall Sub-Group Governance, Leadership Alignment & General Pastoral Care',
-    consultationHours: 'Mondays & Wednesdays (4:00 PM - 6:30 PM)',
-    officeLocation: 'AFIT Staff Complex, Block A, Room 104',
-    bio: 'Oversees the sub-group executive body, spiritual health, and institutional relations across AFIT campus.',
-    initials: 'SO',
-    avatarBg: 'bg-[#1D4ED8]',
-    email: 'samuel.okosun@afit.edu.ng',
-    phone: '+234 801 234 5678',
-  },
-  {
-    id: 'coord-2',
-    name: 'Engr. Bro. Timothy Lawson',
-    officialTitle: 'Associate Coordinator (Brother)',
-    afitPosition: 'AFIT Mechanical Workshop Senior Superintendent',
-    fellowshipFocus: 'Brothers Nurture, Technical Operations & Logistics Governance',
-    consultationHours: 'Tuesdays & Thursdays (4:00 PM - 6:00 PM)',
-    officeLocation: 'AFIT Technical Workshop Complex',
-    bio: 'Provides dedicated spiritual mentoring, career guidance, and logistics oversight for brother student members.',
-    initials: 'TL',
-    avatarBg: 'bg-[#1E3A8A]',
-    email: 'timothy.lawson@afit.edu.ng',
-    phone: '+234 802 345 6789',
-  },
-  {
-    id: 'coord-3',
-    name: 'Prof. Dr. A. K. Mohammed',
-    officialTitle: 'Associate Coordinator (Brother)',
-    afitPosition: 'Professor of Aerospace Engineering, AFIT',
-    fellowshipFocus: 'Academic Integrity, Research Mentorship & Post-Graduate Advisory',
-    consultationHours: 'Fridays (2:00 PM - 4:30 PM)',
-    officeLocation: 'Department of Aerospace Engineering, HOD Block',
-    bio: 'Guides student brethren in academic research distinction, scholarship applications, and career advancement.',
-    initials: 'AM',
-    avatarBg: 'bg-[#D97706]',
-    email: 'ak.mohammed@afit.edu.ng',
-    phone: '+234 803 456 7890',
-  },
-  {
-    id: 'coord-4',
-    name: 'Sister Comfort Adebayo',
-    officialTitle: 'Associate Coordinator (Sister)',
-    afitPosition: 'AFIT Senior Administrative Officer',
-    fellowshipFocus: 'Sisters Welfare, Personal Counseling & Hostel Life Advisory',
-    consultationHours: 'Tuesdays & Thursdays (3:30 PM - 6:00 PM)',
-    officeLocation: 'AFIT Administrative Building, Office 12',
-    bio: 'Provides dedicated spiritual, emotional, and personal counseling for female student brethren across AFIT hostels.',
-    initials: 'CA',
-    avatarBg: 'bg-[#059669]',
-    email: 'comfort.adebayo@afit.edu.ng',
-    phone: '+234 804 567 8901',
-  },
-  {
-    id: 'coord-5',
-    name: 'Dr. Sis. Patricia Emmanuel',
-    officialTitle: 'Associate Coordinator (Sister)',
-    afitPosition: 'Senior Lecturer, Department of Computer Science, AFIT',
-    fellowshipFocus: 'Academic Counseling for Sisters, Family Life & Mentorship',
-    consultationHours: 'Wednesdays & Fridays (2:00 PM - 5:00 PM)',
-    officeLocation: 'AFIT ICT Complex, Office 08',
-    bio: 'Supports sisters academic excellence, balance, and spiritual growth across all undergraduate and diploma levels.',
-    initials: 'PE',
-    avatarBg: 'bg-[#7C3AED]',
-    email: 'patricia.emmanuel@afit.edu.ng',
-    phone: '+234 805 678 9012',
-  },
-];
 
 export default function AssociateCoordinatorsDirectoryPage() {
+  const [coordinators, setCoordinators] = useState<CoordinatorMember[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('ALL');
   const [selectedCoord, setSelectedCoord] = useState<CoordinatorMember | null>(null);
   const [messageText, setMessageText] = useState('');
   const [sentSuccess, setSentSuccess] = useState(false);
 
-  const filteredCoords = ASSOCIATE_COORDINATORS.filter((coord) => {
+  useEffect(() => {
+    const load = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, department, email, phone_number')
+        .eq('role', 'ASSOCIATE_COORDINATOR');
+      setCoordinators(
+        (data ?? []).map((p) => ({
+          id: p.id,
+          name: p.full_name ?? 'Unnamed',
+          officialTitle: 'Associate Coordinator',
+          afitPosition: p.department ?? 'AFIT Staff / Advisor',
+          fellowshipFocus: 'Pastoral care, academic mentorship, and counseling support for students.',
+          consultationHours: 'Contact directly to arrange',
+          officeLocation: 'AFIT Campus',
+          bio: `Serving as an Associate Coordinator supporting DLCF AFIT students.`,
+          initials: (p.full_name ?? 'U U').split(' ').filter(Boolean).slice(0, 2).map((w: string) => w[0]).join('').toUpperCase(),
+          avatarBg: 'bg-[#1D4ED8]',
+          email: p.email ?? '',
+          phone: p.phone_number ?? '',
+        }))
+      );
+    };
+    load();
+  }, []);
+
+  const filteredCoords = coordinators.filter((coord) => {
     const matchesSearch =
       coord.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       coord.officialTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -185,7 +142,7 @@ export default function AssociateCoordinatorsDirectoryPage() {
               selectedRole === 'ALL' ? 'bg-[#1D4ED8] text-white' : 'bg-white border border-[#E2E8F0] text-[#4B5563]'
             }`}
           >
-            All Associate Coordinators ({ASSOCIATE_COORDINATORS.length})
+            All Associate Coordinators ({coordinators.length})
           </button>
           <button
             onClick={() => setSelectedRole('Sub-Group Associate coordinator')}
