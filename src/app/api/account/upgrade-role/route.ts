@@ -23,13 +23,8 @@ export async function POST(req: NextRequest) {
     const payload = (await req.json()) as Record<string, unknown>;
     const { upgradeType, passcode, excoOffice } = payload;
 
-    if (upgradeType !== 'exco' && upgradeType !== 'coordinator') {
+    if (!['exco', 'coordinator', 'change-office'].includes(upgradeType as string)) {
       return NextResponse.json({ error: 'Invalid upgrade type' }, { status: 400 });
-    }
-
-    const expected = PASSCODES[upgradeType];
-    if (!expected || passcode !== expected) {
-      return NextResponse.json({ error: 'Invalid accreditation passcode' }, { status: 403 });
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -39,9 +34,6 @@ export async function POST(req: NextRequest) {
     }
     const admin = createAdminClient(supabaseUrl, serviceRoleKey);
 
-    // Only a GENERAL_STUDENT can self-upgrade this way. Anything else
-    // (already Exco, already Coordinator, or an Admin) needs a different,
-    // deliberately more manual process — not built yet, on purpose.
     const { data: currentProfile, error: fetchError } = await admin
       .from('profiles')
       .select('role')
@@ -50,6 +42,29 @@ export async function POST(req: NextRequest) {
 
     if (fetchError || !currentProfile) {
       return NextResponse.json({ error: 'Could not find your profile.' }, { status: 400 });
+    }
+
+    // Already an Exco, just reassigning portfolio — no re-accreditation needed,
+    // but still server-side only (executive_office isn't self-editable via RLS).
+    if (upgradeType === 'change-office') {
+      if (currentProfile.role !== 'STUDENT_EXECUTIVE') {
+        return NextResponse.json({ error: 'Only a current Student Executive can change their office.' }, { status: 403 });
+      }
+      const { error: updateError } = await admin
+        .from('profiles')
+        .update({ executive_office: excoOffice ?? null })
+        .eq('id', user.id);
+      if (updateError) {
+        return NextResponse.json({ error: updateError.message }, { status: 400 });
+      }
+      return NextResponse.json({ success: true });
+    }
+
+    // Fresh accreditation into Exco or Coordinator — passcode required,
+    // and only a General Student can take this path.
+    const expected = PASSCODES[upgradeType as string];
+    if (!expected || passcode !== expected) {
+      return NextResponse.json({ error: 'Invalid accreditation passcode' }, { status: 403 });
     }
     if (currentProfile.role !== 'GENERAL_STUDENT') {
       return NextResponse.json(

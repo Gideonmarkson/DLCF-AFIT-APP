@@ -43,7 +43,7 @@ export default function ProfileSetupPage() {
 
   // Role-upgrade state (General Students only)
   const [upgradeType, setUpgradeType] = useState<'exco' | 'coordinator'>('exco');
-  const [excoOffice, setExcoOffice] = useState('General Coordinator');
+  const [excoOffice, setExcoOffice] = useState(profile.executiveOffice ?? 'General Coordinator');
   const [upgradePasscode, setUpgradePasscode] = useState('');
   const [upgradeError, setUpgradeError] = useState('');
   const [upgradeLoading, setUpgradeLoading] = useState(false);
@@ -133,6 +133,26 @@ export default function ProfileSetupPage() {
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Upgrade failed');
+      router.refresh();
+    } catch (err) {
+      setUpgradeError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setUpgradeLoading(false);
+    }
+  };
+
+  const handleChangeOffice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpgradeError('');
+    setUpgradeLoading(true);
+    try {
+      const res = await fetch('/api/account/upgrade-role', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ upgradeType: 'change-office', excoOffice }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Could not update office');
       router.refresh();
     } catch (err) {
       setUpgradeError(err instanceof Error ? err.message : 'Something went wrong');
@@ -487,6 +507,37 @@ export default function ProfileSetupPage() {
 
             <Button type="submit" variant="primary" disabled={upgradeLoading} className="sm:col-span-2 text-xs font-bold gap-2 rounded-xl py-2.5">
               {upgradeLoading ? 'Verifying...' : 'Upgrade My Account'}
+            </Button>
+          </form>
+        </Card>
+      )}
+
+      {isExco && (
+        <Card className="border-[#E2E8F0] bg-white p-6 space-y-4 shadow-xs">
+          <div>
+            <h2 className="text-base font-extrabold text-[#1F2937] flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-[#1D4ED8]" /> Change My Executive Office
+            </h2>
+            <p className="text-xs text-[#6B7280]">
+              Reassigned to a different portfolio? Update it here — this doesn&apos;t need the passcode again since
+              you&apos;re already accredited.
+            </p>
+          </div>
+
+          <form onSubmit={handleChangeOffice} className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
+            <div className="space-y-1 sm:col-span-2">
+              <label className="block text-xs font-extrabold text-[#1F2937]">New Executive Office</label>
+              <Select value={excoOffice} onChange={(e) => setExcoOffice(e.target.value)} className="text-xs">
+                {DLCF_EXCO_PORTFOLIOS.map((office: string) => (
+                  <option key={office} value={office}>{office}</option>
+                ))}
+              </Select>
+            </div>
+
+            {upgradeError && <p className="text-xs text-red-600 font-bold sm:col-span-2">{upgradeError}</p>}
+
+            <Button type="submit" variant="primary" disabled={upgradeLoading} className="sm:col-span-2 text-xs font-bold gap-2 rounded-xl py-2.5">
+              {upgradeLoading ? 'Updating...' : 'Update My Office'}
             </Button>
           </form>
         </Card>

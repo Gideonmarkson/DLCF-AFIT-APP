@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 
 export type RolePerspective =
   | 'GENERAL_STUDENT'
@@ -46,9 +46,7 @@ export function RoleProvider({
   initialRole: RolePerspective;
   profile: UserProfile;
 }) {
-  const [userRole] = useState<RolePerspective>(initialRole);
-  const [userProfile] = useState<UserProfile>(profile);
-  return <RoleContext.Provider value={{ userRole, profile: userProfile }}>{children}</RoleContext.Provider>;
+  return <RoleContext.Provider value={{ userRole: initialRole, profile }}>{children}</RoleContext.Provider>;
 }
 
 export function useRole() {
