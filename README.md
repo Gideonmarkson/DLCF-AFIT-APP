@@ -64,14 +64,6 @@ The platform implements 4 distinct role perspectives:
 | `ASSOCIATE_COORDINATOR` | Pastoral Counseling Reply Workspace (`/spiritual/counseling`), Media uploads (for Secretarial/Media staff), and Coordinator Governance Queue (`/admin/academic-overview`). *Access guarded from student registration pages.* |
 | `SYSTEM_ADMINISTRATOR` | Full Super Admin Control Center (`/admin/system-management`), user role promotions, passcode rotation, email broadcast center, media uploads, and scholarship management. |
 
----
-
-## 🔐 Security Passcodes & Accreditation Keys
-
-* **Student Exco Accreditation Passcode**: `DLCF-EXCO-2026` *(Required at `/register/exco`)*
-* **Associate Coordinator Security Key**: `DLCF-STAFF-PASSCODE-2026` *(Required at `/register/coordinator`)*
-
----
 
 ## 🛠️ Technology Stack
 
