@@ -10,7 +10,12 @@ function Inner({ children }: { children: React.ReactNode }) {
   const { userRole, profile } = useRole();
   return (
     <div className="flex min-h-screen bg-[#F8FAFC] text-[#1F2937] font-sans">
-      <Sidebar userRole={userRole} userName={profile.fullName} cgpa={profile.cgpa} />
+      <Sidebar
+        userRole={userRole}
+        userName={profile.fullName}
+        cgpa={profile.cgpa}
+        executiveOffice={profile.executiveOffice}
+      />
       <div className="flex-1 flex flex-col min-w-0">
         <Header userRole={userRole} userName={profile.fullName} userEmail={profile.email} />
         <MobileNav userRole={userRole} />

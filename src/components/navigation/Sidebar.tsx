@@ -27,9 +27,15 @@ interface SidebarProps {
   userRole?: RolePerspective;
   userName?: string;
   cgpa?: number;
+  executiveOffice?: string | null;
 }
 
-export function Sidebar({ userRole = 'GENERAL_STUDENT', userName = 'Brother Daniel Adebayo', cgpa = 4.25 }: SidebarProps) {
+export function Sidebar({
+  userRole = 'GENERAL_STUDENT',
+  userName = 'Brother Daniel Adebayo',
+  cgpa = 4.25,
+  executiveOffice = null,
+}: SidebarProps) {
   const pathname = usePathname();
 
   const isAdmin = userRole === 'SYSTEM_ADMINISTRATOR';
@@ -147,7 +153,13 @@ export function Sidebar({ userRole = 'GENERAL_STUDENT', userName = 'Brother Dani
           <div className="truncate whitespace-nowrap flex-1">
             <div className="text-xs font-extrabold text-[#1F2937] truncate">{isAdmin ? 'Super Admin' : userName}</div>
             <div className="text-[10px] text-[#6B7280] font-semibold truncate">
-              {isAdmin ? 'System Administrator' : isStaff ? 'AFIT Associate Coordinator' : isExco ? 'Academic Director (Exco)' : 'AFIT Student Member'}
+              {isAdmin
+                ? 'System Administrator'
+                : isStaff
+                  ? 'AFIT Associate Coordinator'
+                  : isExco
+                    ? executiveOffice || 'Student Executive'
+                    : 'AFIT Student Member'}
             </div>
           </div>
         </Link>
