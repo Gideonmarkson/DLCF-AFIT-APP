@@ -33,15 +33,16 @@ const config: Config = {
       },
       fontFamily: {
         sans: [
+          "var(--font-jakarta)",
           "ui-sans-serif",
           "system-ui",
           "-apple-system",
-          "BlinkMacSystemFont",
-          '"Segoe UI"',
-          "Roboto",
-          '"Helvetica Neue"',
-          "Arial",
           "sans-serif",
+        ],
+        display: [
+          "var(--font-fraunces)",
+          "Georgia",
+          "serif",
         ],
         mono: ["var(--font-jetbrains)", "monospace"],
       },

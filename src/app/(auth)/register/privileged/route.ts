@@ -15,9 +15,7 @@ function normalizeLevel(level: unknown) {
     if (Number.isFinite(levelValue)) {
       return String(levelValue);
     }
-
-    const normalizedLabel = trimmed.toUpperCase();
-    return normalizedLabel;
+    return trimmed.toUpperCase();
   }
   return null;
 }
@@ -52,14 +50,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required registration fields' }, { status: 400 });
     }
 
-    if (registrationType === 'student') {
-      // Standard student registrations use the same secure flow so the dashboard can read the profile row on sign-in.
-    } else if (registrationType !== 'exco' && registrationType !== 'coordinator') {
+    if (registrationType !== 'student' && registrationType !== 'exco' && registrationType !== 'coordinator') {
       return NextResponse.json({ error: 'Invalid registration type' }, { status: 400 });
     }
 
     if (registrationType !== 'student') {
-      const expected = PASSCODES[registrationType];
+      const expected = PASSCODES[registrationType as string];
       if (!expected || passcode !== expected) {
         return NextResponse.json({ error: 'Invalid accreditation passcode' }, { status: 403 });
       }
@@ -72,11 +68,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Supabase server env values are missing. Restart Next after updating .env.local.' }, { status: 500 });
     }
 
-    const admin = createClient(
-      supabaseUrl,
-      serviceRoleKey
-    );
+    const admin = createClient(supabaseUrl, serviceRoleKey);
+    const role = registrationType === 'student'
+      ? 'GENERAL_STUDENT'
+      : registrationType === 'exco'
+        ? 'STUDENT_EXECUTIVE'
+        : 'ASSOCIATE_COORDINATOR';
 
+    // An account with this email already exists. Never reset someone else's
+    // password or role from an unauthenticated request just because the
+    // caller supplied a matching email — that's not proof of who's asking.
+    // The real path for an existing user to gain a new role is
+    // /api/account/upgrade-role, which requires their own active session.
+    const { data: existingProfile } = await admin
+      .from('profiles')
+      .select('id')
+      .eq('email', email as string)
+      .maybeSingle();
+
+    if (existingProfile) {
+      return NextResponse.json(
+        { error: 'An account with this email already exists. Sign in and use "Apply for Executive / Associate Coordinator Access" in your Profile Settings instead.' },
+        { status: 409 }
+      );
+    }
+
+    // Create fresh user account
     const { data: authData, error: authError } = await admin.auth.admin.createUser({
       email: email as string,
       password: password as string,
@@ -85,19 +102,13 @@ export async function POST(req: NextRequest) {
         full_name: fullName,
         phone,
         department,
-        role: registrationType === 'student' ? 'GENERAL_STUDENT' : registrationType === 'exco' ? 'STUDENT_EXECUTIVE' : 'ASSOCIATE_COORDINATOR',
+        role,
       },
     });
 
     if (authError || !authData.user) {
       return NextResponse.json({ error: authError?.message ?? 'Could not create account' }, { status: 400 });
     }
-
-    const role = registrationType === 'student'
-      ? 'GENERAL_STUDENT'
-      : registrationType === 'exco'
-        ? 'STUDENT_EXECUTIVE'
-        : 'ASSOCIATE_COORDINATOR';
 
     const profileInsert = {
       id: authData.user.id,
@@ -119,7 +130,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: profileError.message }, { status: 400 });
     }
 
-    // Never let a mail-provider hiccup fail a real account creation that already succeeded.
     sendWelcomeEmail({ toEmail: email as string, fullName: fullName as string, role }).catch((err) =>
       console.error('Welcome email failed (non-blocking):', err)
     );
