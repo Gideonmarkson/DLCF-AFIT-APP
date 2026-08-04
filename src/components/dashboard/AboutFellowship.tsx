@@ -3,15 +3,15 @@ import Image from 'next/image';
 
 export function AboutFellowship() {
   return (
-    <div className="relative rounded-3xl overflow-hidden shadow-md">
+    <div className="relative rounded-3xl overflow-hidden shadow-md min-h-[260px] sm:min-h-[300px]">
       <div className="absolute inset-0 bg-gradient-to-br from-[#0F1E4D] to-[#1D4ED8]" />
       <div
-        className="absolute inset-0 bg-cover bg-center opacity-25"
+        className="absolute inset-0 bg-cover bg-top opacity-25"
         style={{ backgroundImage: "url(/fellowship/congregation.jpg)" }}
       />
       <div className="absolute inset-0 bg-black/40" />
 
-      <div className="relative flex flex-col sm:flex-row items-center gap-6 p-6 sm:p-8">
+      <div className="relative h-full flex flex-col sm:flex-row items-center gap-6 p-6 sm:p-8">
         <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-white p-2 shadow-lg shrink-0">
           <div className="relative w-full h-full rounded-full overflow-hidden">
             <Image

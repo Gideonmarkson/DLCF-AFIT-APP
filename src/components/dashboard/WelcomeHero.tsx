@@ -17,13 +17,13 @@ export function WelcomeHero({ firstName }: { firstName: string }) {
   }, []);
 
   return (
-    <div className="relative w-full h-64 sm:h-80 rounded-3xl overflow-hidden shadow-lg">
+    <div className="relative w-full h-80 sm:h-[26rem] rounded-3xl overflow-hidden shadow-lg">
       <div className="absolute inset-0 bg-gradient-to-br from-[#1E3A8A] via-[#1D4ED8] to-[#1E40AF]" />
 
       {SLIDES.map((src, i) => (
         <div
           key={src}
-          className="absolute inset-0 bg-cover bg-center transition-opacity duration-1000"
+          className="absolute inset-0 bg-cover bg-top transition-opacity duration-1000"
           style={{ backgroundImage: `url(${src})`, opacity: activeSlide === i ? 1 : 0 }}
         />
       ))}

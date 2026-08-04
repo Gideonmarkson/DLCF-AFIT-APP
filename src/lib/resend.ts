@@ -49,7 +49,7 @@ export async function sendCounselingNotification(params: {
 
   try {
     const data = await resend.emails.send({
-      from: 'DLCF AFIT Counseling Hub <counseling@dlcf-afit.org>',
+      from: 'DLCF AFIT Counseling Hub <onboarding@resend.dev>',
       to: [params.advisorEmail],
       subject: `[Confidential Counseling Request] ${params.subject}`,
       html: `

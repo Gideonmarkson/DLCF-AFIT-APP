@@ -16,10 +16,20 @@ function Inner({ children }: { children: React.ReactNode }) {
         cgpa={profile.cgpa}
         executiveOffice={profile.executiveOffice}
       />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative">
+        {/* Site-wide faded watermark, sits behind every dashboard page */}
+        <div
+          className="pointer-events-none fixed inset-0 lg:left-72 flex items-center justify-center opacity-[0.05] z-0"
+          style={{
+            backgroundImage: 'url(/fellowship/dlcf-logo-badge.png)',
+            backgroundSize: '55%',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        />
         <Header userRole={userRole} userName={profile.fullName} userEmail={profile.email} />
         <MobileNav userRole={userRole} />
-        <main className="flex-1 p-4 md:p-6 lg:p-8 space-y-6 max-w-7xl w-full mx-auto">{children}</main>
+        <main className="relative z-10 flex-1 p-4 md:p-6 lg:p-8 space-y-6 max-w-7xl w-full mx-auto">{children}</main>
       </div>
     </div>
   );
