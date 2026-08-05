@@ -17,6 +17,8 @@ export interface UserProfile {
   currentLevel: string | null;
   department: string | null;
   executiveOffice: string | null;
+  tenureSession: string | null;
+  avatarUrl: string | null;
 }
 
 interface RoleContextType {
@@ -33,6 +35,8 @@ const defaultProfile: UserProfile = {
   currentLevel: null,
   department: null,
   executiveOffice: null,
+  tenureSession: null,
+  avatarUrl: null,
 };
 
 const RoleContext = createContext<RoleContextType>({ userRole: 'GENERAL_STUDENT', profile: defaultProfile });

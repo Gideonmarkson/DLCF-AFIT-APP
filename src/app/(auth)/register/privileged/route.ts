@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
       cgpa,
       excoOffice,
       matricNo,
+      tenureSession,
     } = payload;
 
     if (!email || !password || !fullName || !department) {
@@ -120,6 +121,7 @@ export async function POST(req: NextRequest) {
       matric_number: registrationType === 'student' ? matricNo ?? null : null,
       role,
       executive_office: registrationType === 'exco' ? excoOffice ?? null : null,
+      tenure_session: registrationType === 'exco' ? tenureSession ?? null : null,
       cgpa: registrationType === 'exco' ? Number(cgpa) || 0 : 0,
     };
 

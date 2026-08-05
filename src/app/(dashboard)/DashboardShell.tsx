@@ -15,6 +15,7 @@ function Inner({ children }: { children: React.ReactNode }) {
         userName={profile.fullName}
         cgpa={profile.cgpa}
         executiveOffice={profile.executiveOffice}
+        avatarUrl={profile.avatarUrl}
       />
       <div className="flex-1 flex flex-col min-w-0 relative">
         {/* Site-wide faded watermark, sits behind every dashboard page */}
@@ -27,7 +28,7 @@ function Inner({ children }: { children: React.ReactNode }) {
             backgroundRepeat: 'no-repeat',
           }}
         />
-        <Header userRole={userRole} userName={profile.fullName} userEmail={profile.email} />
+        <Header userRole={userRole} userName={profile.fullName} userEmail={profile.email} userAvatarUrl={profile.avatarUrl} />
         <MobileNav userRole={userRole} />
         <main className="relative z-10 flex-1 p-4 md:p-6 lg:p-8 space-y-6 max-w-7xl w-full mx-auto">{children}</main>
       </div>

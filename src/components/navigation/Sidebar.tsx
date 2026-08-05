@@ -28,6 +28,7 @@ interface SidebarProps {
   userName?: string;
   cgpa?: number;
   executiveOffice?: string | null;
+  avatarUrl?: string | null;
 }
 
 export function Sidebar({
@@ -35,12 +36,14 @@ export function Sidebar({
   userName = 'Brother Daniel Adebayo',
   cgpa = 4.25,
   executiveOffice = null,
+  avatarUrl = null,
 }: SidebarProps) {
   const pathname = usePathname();
 
   const isAdmin = userRole === 'SYSTEM_ADMINISTRATOR';
   const isStaff = userRole === 'ASSOCIATE_COORDINATOR';
   const isExco = userRole === 'STUDENT_EXECUTIVE';
+  const initials = userName.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'U';
   const isCoordinator = isStaff || isExco;
 
   // Build navigation items strictly based on role:
@@ -147,11 +150,15 @@ export function Sidebar({
 
         {/* Profile Card */}
         <Link href="/profile/setup" className="p-3 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs flex items-center gap-3 hover:border-[#1D4ED8] transition-colors cursor-pointer block">
-          <div className="w-9 h-9 rounded-full bg-[#1D4ED8] text-white font-extrabold flex items-center justify-center text-xs shadow-sm ring-2 ring-[#1D4ED8]/20 shrink-0">
-            {isAdmin ? 'SA' : isStaff ? 'SO' : isExco ? 'BA' : 'DA'}
+          <div className="relative w-9 h-9 rounded-full bg-[#1D4ED8] text-white font-extrabold flex items-center justify-center text-xs shadow-sm ring-2 ring-[#1D4ED8]/20 shrink-0 overflow-hidden">
+            {avatarUrl ? (
+              <Image src={avatarUrl} alt={userName} fill className="object-cover" />
+            ) : (
+              initials
+            )}
           </div>
           <div className="truncate whitespace-nowrap flex-1">
-            <div className="text-xs font-extrabold text-[#1F2937] truncate">{isAdmin ? 'Super Admin' : userName}</div>
+            <div className="text-xs font-extrabold text-[#1F2937] truncate">{userName}</div>
             <div className="text-[10px] text-[#6B7280] font-semibold truncate">
               {isAdmin
                 ? 'System Administrator'

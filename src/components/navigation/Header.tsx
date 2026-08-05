@@ -15,6 +15,7 @@ interface HeaderProps {
   userRole?: RolePerspective;
   userName?: string;
   userEmail?: string;
+  userAvatarUrl?: string | null;
   onRoleChange?: (role: RolePerspective) => void;
 }
 
@@ -32,6 +33,7 @@ export function Header({
   userRole = 'GENERAL_STUDENT',
   userName = 'User',
   userEmail = '',
+  userAvatarUrl = null,
   onRoleChange,
 }: HeaderProps) {
   const router = useRouter();
@@ -227,8 +229,12 @@ export function Header({
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className="flex items-center gap-1.5 p-1 sm:p-1.5 sm:pl-2.5 rounded-full border border-[#E2E8F0] bg-white hover:border-[#1D4ED8] transition-colors shadow-2xs cursor-pointer active:scale-95"
           >
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#1D4ED8] text-white flex items-center justify-center font-extrabold text-[11px] sm:text-xs shadow-xs ring-2 ring-[#1D4ED8]/20">
-              {profile.initials}
+            <div className="relative w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#1D4ED8] text-white flex items-center justify-center font-extrabold text-[11px] sm:text-xs shadow-xs ring-2 ring-[#1D4ED8]/20 overflow-hidden">
+              {userAvatarUrl ? (
+                <Image src={userAvatarUrl} alt={profile.name} fill className="object-cover" />
+              ) : (
+                profile.initials
+              )}
             </div>
             <div className="text-left hidden lg:block pr-1">
               <div className="text-xs font-extrabold text-[#1F2937] leading-tight">{profile.name}</div>

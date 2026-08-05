@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Award, GraduationCap, Mail, Phone, Calendar, Search } from 'lucide-react';
+import { Award, GraduationCap, Mail, Phone, Calendar, Search, MessageCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ interface ExcoMember {
   bio: string;
   initials: string;
   phone: string;
+  tenureSession: string;
 }
 
 
@@ -32,7 +33,7 @@ export default function StudentExcosPage() {
       const supabase = createClient();
       const { data } = await supabase
         .from('profiles')
-        .select('id, full_name, executive_office, department, current_level, cgpa, phone_number')
+        .select('id, full_name, executive_office, department, current_level, cgpa, phone_number, tenure_session')
         .eq('role', 'STUDENT_EXECUTIVE');
       setExcos(
         (data ?? []).map((p) => ({
@@ -45,6 +46,7 @@ export default function StudentExcosPage() {
           bio: `Serving as ${p.executive_office ?? 'a Student Executive'} for the fellowship.`,
           initials: (p.full_name ?? 'U U').split(' ').filter(Boolean).slice(0, 2).map((w: string) => w[0]).join('').toUpperCase(),
           phone: p.phone_number ?? '',
+          tenureSession: p.tenure_session ?? '',
         }))
       );
     };
@@ -131,7 +133,7 @@ export default function StudentExcosPage() {
                   <div>
                     <CardTitle className="text-sm font-extrabold text-[#1F2937]">{exco.name}</CardTitle>
                     <CardDescription className="text-xs font-bold text-[#1D4ED8] mt-0.5">
-                      {exco.portfolio}
+                      {exco.portfolio}{exco.tenureSession ? ` · ${exco.tenureSession}` : ''}
                     </CardDescription>
                   </div>
                 </div>
@@ -158,9 +160,14 @@ export default function StudentExcosPage() {
               </p>
 
               <div className="flex items-center gap-2 pt-2 border-t border-[#E2E8F0]">
-                <a href={`tel:${exco.phone}`} className="w-full">
+                <a href={`tel:${exco.phone}`} className="flex-1">
                   <Button variant="outline" size="sm" className="w-full gap-1 text-xs border-[#1D4ED8] text-[#1D4ED8] hover:bg-[#EFF6FF]">
-                    <Phone className="w-3.5 h-3.5" /> Call / WhatsApp
+                    <Phone className="w-3.5 h-3.5" /> Call
+                  </Button>
+                </a>
+                <a href={`https://wa.me/${exco.phone.replace(/[^\d]/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex-1">
+                  <Button variant="outline" size="sm" className="w-full gap-1 text-xs border-emerald-600 text-emerald-700 hover:bg-emerald-50">
+                    <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
                   </Button>
                 </a>
               </div>

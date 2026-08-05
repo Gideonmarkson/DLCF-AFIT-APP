@@ -6,7 +6,6 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { createClient } from '@/lib/supabase/client';
 
 interface CounselingFormModalProps {
   onSuccess?: () => void;
@@ -24,20 +23,14 @@ export function CounselingFormModal({ onSuccess }: CounselingFormModalProps) {
     e.preventDefault();
     setError('');
     startTransition(async () => {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setError('Your session expired — please sign in again.');
-        return;
-      }
-      const { error: insertError } = await supabase.from('counseling_requests').insert({
-        student_id: user.id,
-        subject,
-        message,
-        is_anonymous: isAnonymous,
+      const res = await fetch('/api/counseling', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject, message, isAnonymous }),
       });
-      if (insertError) {
-        setError(insertError.message);
+      const result = await res.json();
+      if (!res.ok) {
+        setError(result.error || 'Could not submit your request.');
         return;
       }
       setIsSubmitted(true);

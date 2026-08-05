@@ -14,6 +14,7 @@ import {
   Building,
   HeartHandshake,
   Phone,
+  MessageCircle,
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -220,14 +221,21 @@ export default function AssociateCoordinatorsDirectoryPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-2 pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedCoord(coord)}
-                  className="w-full gap-1 text-xs border-[#1D4ED8] text-[#1D4ED8] hover:bg-[#EFF6FF]"
-                >
-                  <Mail className="w-3.5 h-3.5" /> Private Message
-                </Button>
+                <a href={`tel:${coord.phone}`}>
+                  <Button variant="outline" size="sm" className="w-full gap-1 text-xs border-[#1D4ED8] text-[#1D4ED8] hover:bg-[#EFF6FF]">
+                    <Phone className="w-3.5 h-3.5" /> Call
+                  </Button>
+                </a>
+                <a href={`https://wa.me/${coord.phone.replace(/[^\d]/g, '')}`} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm" className="w-full gap-1 text-xs border-emerald-600 text-emerald-700 hover:bg-emerald-50">
+                    <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                  </Button>
+                </a>
+                <a href={`mailto:${coord.email}`}>
+                  <Button variant="outline" size="sm" className="w-full gap-1 text-xs border-[#6B7280] text-[#4B5563] hover:bg-[#F1F5F9]">
+                    <Mail className="w-3.5 h-3.5" /> Email
+                  </Button>
+                </a>
 
                 <Link href="/spiritual/counseling" className="w-full">
                   <Button

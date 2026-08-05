@@ -20,6 +20,7 @@ interface MentorOption {
   dept: string;
   level: string;
   cgpa: number;
+  email: string;
 }
 
 export function MentorAssignModal({ student, onClose, onAssigned }: MentorAssignModalProps) {
@@ -32,7 +33,7 @@ export function MentorAssignModal({ student, onClose, onAssigned }: MentorAssign
       const supabase = createClient();
       const { data } = await supabase
         .from('profiles')
-        .select('id, full_name, department, current_level, cgpa')
+        .select('id, full_name, department, current_level, cgpa, email')
         .in('role', ['GENERAL_STUDENT', 'STUDENT_EXECUTIVE'])
         .gte('cgpa', 4.0);
       const mapped = (data ?? []).map((p) => ({
@@ -41,6 +42,7 @@ export function MentorAssignModal({ student, onClose, onAssigned }: MentorAssign
         dept: p.department ?? '—',
         level: p.current_level ?? '—',
         cgpa: p.cgpa ?? 0,
+        email: p.email ?? '',
       }));
       setSeniors(mapped);
       if (mapped.length > 0) setSelectedMentorId(mapped[0].id);
@@ -52,6 +54,11 @@ export function MentorAssignModal({ student, onClose, onAssigned }: MentorAssign
     const mentor = seniors.find((m) => m.id === selectedMentorId);
     if (mentor) {
       setIsSuccess(true);
+      fetch('/api/mentor/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mentorEmail: mentor.email, mentorName: mentor.name, studentName: student.fullName }),
+      }).catch((err) => console.error('Mentor notification failed (non-blocking):', err));
       setTimeout(() => {
         onAssigned(mentor.name + ` (${mentor.level}L)`);
       }, 700);

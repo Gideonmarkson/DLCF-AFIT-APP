@@ -20,6 +20,7 @@ export default function ExcoRegistrationPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [excoOffice, setExcoOffice] = useState('General Coordinator');
+  const [tenureSession, setTenureSession] = useState('2025/2026');
   const [department, setDepartment] = useState('B.Eng Aerospace Engineering');
   const [level, setLevel] = useState('400');
   const [cgpa, setCgpa] = useState('4.75');
@@ -50,6 +51,7 @@ export default function ExcoRegistrationPage() {
           level,
           cgpa,
           excoOffice,
+          tenureSession,
         }),
       });
 
@@ -119,6 +121,17 @@ export default function ExcoRegistrationPage() {
                   </option>
                 ))}
               </Select>
+            </div>
+
+            {/* Tenure / Academic Session */}
+            <div className="space-y-1">
+              <label className="block text-xs font-extrabold text-[#1F2937]">Tenure (Academic Session)</label>
+              <Input
+                value={tenureSession}
+                onChange={(e) => setTenureSession(e.target.value)}
+                placeholder="e.g. 2025/2026"
+                className="text-xs font-bold"
+              />
             </div>
 
             {/* Full Name */}

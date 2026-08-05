@@ -1,39 +1,60 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendCounselingNotification } from '@/lib/resend';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { subject, category, message, isAnonymous, advisorEmail, advisorName, ticketId } = body;
+    const sessionClient = await createServerClient();
+    const {
+      data: { user },
+    } = await sessionClient.auth.getUser();
 
-    if (!subject || !message) {
-      return NextResponse.json(
-        { error: 'Subject and message are required fields' },
-        { status: 400 }
-      );
+    if (!user) {
+      return NextResponse.json({ error: 'You must be signed in to submit a counseling request.' }, { status: 401 });
     }
 
-    // Dispatch email alert to Associate Coordinator via Resend
+    const body = await req.json();
+    const { subject, message, isAnonymous } = body;
+
+    if (!subject || !message) {
+      return NextResponse.json({ error: 'Subject and message are required fields' }, { status: 400 });
+    }
+
+    // Real insert — this IS the ticket, not a side effect of sending an email.
+    const { data: ticket, error: insertError } = await sessionClient
+      .from('counseling_requests')
+      .insert({
+        student_id: user.id,
+        subject,
+        message,
+        is_anonymous: Boolean(isAnonymous),
+      })
+      .select('id')
+      .single();
+
+    if (insertError || !ticket) {
+      return NextResponse.json({ error: insertError?.message ?? 'Could not submit request.' }, { status: 400 });
+    }
+
+    // Notify every real Associate Coordinator on file — not a hardcoded fallback.
+    const { data: coordinators } = await sessionClient
+      .from('profiles')
+      .select('email')
+      .eq('role', 'ASSOCIATE_COORDINATOR');
+
+    const advisorEmails = (coordinators ?? []).map((c) => c.email).filter(Boolean) as string[];
+
     const emailResult = await sendCounselingNotification({
-      advisorEmail: advisorEmail || 'samuel.okosun@afit.edu.ng',
-      advisorName: advisorName || 'Pastor Samuel Okosun',
+      advisorEmails,
       subject,
       messageSnippet: message,
-      ticketId: ticketId || `T-${Math.floor(100 + Math.random() * 900)}`,
+      ticketId: ticket.id.slice(0, 8),
       isAnonymous: Boolean(isAnonymous),
     });
 
-    return NextResponse.json({
-      success: true,
-      message: 'Counseling request submitted and advisor notified',
-      ticketId: ticketId || `T-${Math.floor(100 + Math.random() * 900)}`,
-      emailResult,
-    });
+    return NextResponse.json({ success: true, ticketId: ticket.id, emailResult });
   } catch (error) {
     console.error('Error processing counseling submission:', error);
-    return NextResponse.json(
-      { error: 'Failed to submit counseling ticket' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to submit counseling ticket' }, { status: 500 });
   }
 }

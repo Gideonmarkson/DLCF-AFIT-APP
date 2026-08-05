@@ -12,8 +12,20 @@ import { Button } from '@/components/ui/button';
 
 export default function WelcomeLandingPage() {
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#1F2937] font-sans selection:bg-[#1D4ED8]/10 selection:text-[#1D4ED8]">
-      
+    <div className="relative min-h-screen bg-[#F8FAFC] text-[#1F2937] font-sans selection:bg-[#1D4ED8]/10 selection:text-[#1D4ED8]">
+
+      {/* Site-wide faded watermark, same as the dashboard */}
+      <div
+        className="pointer-events-none fixed inset-0 flex items-center justify-center opacity-[0.05] z-0"
+        style={{
+          backgroundImage: 'url(/fellowship/dlcf-logo-badge.png)',
+          backgroundSize: '40%',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      />
+
+      <div className="relative z-10">
       {/* ================= 1. TOP NAVIGATION BAR ================= */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-[#E2E8F0] shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
@@ -184,6 +196,7 @@ export default function WelcomeLandingPage() {
         </div>
       </footer>
 
+      </div>
     </div>
   );
 }

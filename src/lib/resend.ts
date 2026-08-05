@@ -3,6 +3,31 @@ import { Resend } from 'resend';
 const resendApiKey = process.env.RESEND_API_KEY || '';
 export const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
+export async function sendMentorAssignmentEmail(params: { mentorEmail: string; mentorName: string; studentName: string }) {
+  if (!resend) {
+    console.log(`[Resend Email Mock] Mentor assignment notice sent to ${params.mentorEmail}`);
+    return { success: true, mock: true };
+  }
+  try {
+    const data = await resend.emails.send({
+      from: 'DLCF AFIT <onboarding@resend.dev>',
+      to: [params.mentorEmail],
+      subject: 'You have been paired as an Academic Mentor',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #ffffff; color: #1F2937;">
+          <h2 style="color: #1D4ED8;">Hi ${params.mentorName},</h2>
+          <p>You've been paired as an academic mentor for <strong>${params.studentName}</strong>, a fellow DLCF AFIT student who could use support this semester.</p>
+          <p>Please reach out to them directly when you're able.</p>
+        </div>
+      `,
+    });
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error sending mentor assignment email:', error);
+    return { success: false, error };
+  }
+}
+
 export async function sendWelcomeEmail(params: { toEmail: string; fullName: string; role: string }) {
   if (!resend) {
     console.log(`[Resend Email Mock] Welcome email sent to ${params.toEmail}`);
@@ -35,27 +60,31 @@ export async function sendWelcomeEmail(params: { toEmail: string; fullName: stri
   }
 }
 export async function sendCounselingNotification(params: {
-  advisorEmail: string;
-  advisorName: string;
+  advisorEmails: string[];
   subject: string;
   messageSnippet: string;
   ticketId: string;
   isAnonymous: boolean;
 }) {
+  if (params.advisorEmails.length === 0) {
+    console.log('[Resend] No Associate Coordinator emails on file — skipping notification.');
+    return { success: false, skipped: true };
+  }
+
   if (!resend) {
-    console.log(`[Resend Email Mock] Notification sent to ${params.advisorEmail} for Counseling Ticket #${params.ticketId}`);
+    console.log(`[Resend Email Mock] Notification sent to ${params.advisorEmails.join(', ')} for Counseling Ticket #${params.ticketId}`);
     return { success: true, mock: true };
   }
 
   try {
     const data = await resend.emails.send({
       from: 'DLCF AFIT Counseling Hub <onboarding@resend.dev>',
-      to: [params.advisorEmail],
+      to: params.advisorEmails,
       subject: `[Confidential Counseling Request] ${params.subject}`,
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #0f172a; color: #f8fafc; border-radius: 8px;">
           <h2 style="color: #22d3ee;">Confidential Counseling Ticket Alert</h2>
-          <p>Dear ${params.advisorName},</p>
+          <p>Dear Associate Coordinator,</p>
           <p>A new counseling request has been assigned to you on the <strong>DLCF AFIT Hub</strong>.</p>
           <div style="background-color: #1e293b; padding: 15px; border-left: 4px solid #06b6d4; margin: 15px 0;">
             <p><strong>Subject:</strong> ${params.subject}</p>

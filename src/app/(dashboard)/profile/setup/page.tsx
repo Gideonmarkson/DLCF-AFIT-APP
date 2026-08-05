@@ -31,7 +31,8 @@ import { createClient } from '@/lib/supabase/client';
 export default function ProfileSetupPage() {
   const router = useRouter();
   const { userRole, profile } = useRole();
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(profile.avatarUrl);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const [fullName, setFullName] = useState(profile.fullName);
   const [email] = useState(profile.email);
   const [phone, setPhone] = useState(profile.phone ?? '');
@@ -44,6 +45,7 @@ export default function ProfileSetupPage() {
   // Role-upgrade state (General Students only)
   const [upgradeType, setUpgradeType] = useState<'exco' | 'coordinator'>('exco');
   const [excoOffice, setExcoOffice] = useState(profile.executiveOffice ?? 'General Coordinator');
+  const [tenureSession, setTenureSession] = useState(profile.tenureSession ?? '2025/2026');
   const [upgradePasscode, setUpgradePasscode] = useState('');
   const [upgradeError, setUpgradeError] = useState('');
   const [upgradeLoading, setUpgradeLoading] = useState(false);
@@ -67,19 +69,70 @@ export default function ProfileSetupPage() {
     }
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    setAvatarUploading(true);
+    setError('');
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setError('Your session expired — please sign in again.');
+      setAvatarUploading(false);
+      return;
     }
+
+    const ext = file.name.split('.').pop();
+    const path = `${user.id}/avatar.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(path, file, { upsert: true });
+
+    if (uploadError) {
+      setError(uploadError.message);
+      setAvatarUploading(false);
+      return;
+    }
+
+    const { data: publicUrlData } = supabase.storage.from('avatars').getPublicUrl(path);
+    // Cache-bust so the new photo shows immediately instead of a stale cached version
+    const freshUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`;
+
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: freshUrl })
+      .eq('id', user.id);
+
+    setAvatarUploading(false);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+    setAvatarPreview(freshUrl);
+    router.refresh();
   };
 
-  const handleRemoveAvatar = () => {
+  const handleRemoveAvatar = async () => {
+    setError('');
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.storage.from('avatars').remove([`${user.id}/avatar.jpg`, `${user.id}/avatar.jpeg`, `${user.id}/avatar.png`, `${user.id}/avatar.webp`]);
+
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: null })
+      .eq('id', user.id);
+
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
     setAvatarPreview(null);
+    router.refresh();
   };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -129,6 +182,7 @@ export default function ProfileSetupPage() {
           upgradeType,
           passcode: upgradePasscode,
           excoOffice: upgradeType === 'exco' ? excoOffice : undefined,
+          tenureSession: upgradeType === 'exco' ? tenureSession : undefined,
         }),
       });
       const result = await res.json();
@@ -149,7 +203,7 @@ export default function ProfileSetupPage() {
       const res = await fetch('/api/account/upgrade-role', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ upgradeType: 'change-office', excoOffice }),
+        body: JSON.stringify({ upgradeType: 'change-office', excoOffice, tenureSession }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Could not update office');
@@ -491,6 +545,18 @@ export default function ProfileSetupPage() {
               </div>
             )}
 
+            {upgradeType === 'exco' && (
+              <div className="space-y-1">
+                <label className="block text-xs font-extrabold text-[#1F2937]">Tenure (Academic Session)</label>
+                <Input
+                  value={tenureSession}
+                  onChange={(e) => setTenureSession(e.target.value)}
+                  placeholder="e.g. 2025/2026"
+                  className="text-xs"
+                />
+              </div>
+            )}
+
             <div className="space-y-1 sm:col-span-2">
               <label className="block text-xs font-extrabold text-[#1F2937]">Accreditation Passcode</label>
               <Input
@@ -532,6 +598,16 @@ export default function ProfileSetupPage() {
                   <option key={office} value={office}>{office}</option>
                 ))}
               </Select>
+            </div>
+
+            <div className="space-y-1 sm:col-span-2">
+              <label className="block text-xs font-extrabold text-[#1F2937]">Tenure (Academic Session)</label>
+              <Input
+                value={tenureSession}
+                onChange={(e) => setTenureSession(e.target.value)}
+                placeholder="e.g. 2025/2026"
+                className="text-xs"
+              />
             </div>
 
             {upgradeError && <p className="text-xs text-red-600 font-bold sm:col-span-2">{upgradeError}</p>}
