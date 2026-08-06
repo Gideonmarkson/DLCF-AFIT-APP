@@ -51,7 +51,7 @@ export default function ProfileSetupPage() {
   const [upgradeLoading, setUpgradeLoading] = useState(false);
   
   // Multi-select state for Fellowship Units
-  const [selectedUnits, setSelectedUnits] = useState<string[]>(['Academics', 'Media']);
+  const [selectedUnits, setSelectedUnits] = useState<string[]>(profile.fellowshipUnits ?? []);
   
   const [residence, setResidence] = useState('AFIT Flying Officers Hostel Block C');
   const [loading, setLoading] = useState(false);
@@ -157,6 +157,7 @@ export default function ProfileSetupPage() {
         current_level: level,
         matric_number: matricNo || null,
         cgpa: Number(cgpa) || 0,
+        fellowship_units: selectedUnits,
       })
       .eq('id', user.id);
 
@@ -490,7 +491,7 @@ export default function ProfileSetupPage() {
                 />
               </div>
               <p className="text-[10px] text-[#9CA3AF]">
-                Fellowship unit(s) and residence aren&apos;t saved yet — those two need a small database change first. Everything else on this page saves for real.
+                Campus residence isn&apos;t saved yet — still needs a database column. Everything else on this page, including fellowship units now, saves for real.
               </p>
             </div>
 
