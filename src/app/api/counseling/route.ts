@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendCounselingNotification } from '@/lib/resend';
+import { sendCounselingNotification, sendCounselingConfirmation } from '@/lib/resend';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
@@ -51,6 +51,13 @@ export async function POST(req: NextRequest) {
       ticketId: ticket.id.slice(0, 8),
       isAnonymous: Boolean(isAnonymous),
     });
+
+    const { data: me } = await sessionClient.from('profiles').select('full_name, email').eq('id', user.id).single();
+    if (me?.email) {
+      sendCounselingConfirmation({ studentEmail: me.email, studentName: me.full_name ?? 'there', subject }).catch((err) =>
+        console.error('Student confirmation email failed (non-blocking):', err)
+      );
+    }
 
     return NextResponse.json({ success: true, ticketId: ticket.id, emailResult });
   } catch (error) {

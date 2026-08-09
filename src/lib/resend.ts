@@ -3,6 +3,31 @@ import { Resend } from 'resend';
 const resendApiKey = process.env.RESEND_API_KEY || '';
 export const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
+export async function sendCounselingConfirmation(params: { studentEmail: string; studentName: string; subject: string }) {
+  if (!resend) {
+    console.log(`[Resend Email Mock] Confirmation sent to ${params.studentEmail}`);
+    return { success: true, mock: true };
+  }
+  try {
+    const data = await resend.emails.send({
+      from: 'DLCF AFIT Counseling Hub <onboarding@resend.dev>',
+      to: [params.studentEmail],
+      subject: 'Your counseling request has been received',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #ffffff; color: #1F2937;">
+          <h2 style="color: #1D4ED8;">Hi ${params.studentName},</h2>
+          <p>We've received your confidential request — <strong>${params.subject}</strong> — and every Associate Coordinator has been notified.</p>
+          <p>Someone will follow up with you directly. You can also track this in your Counseling Request History in the app.</p>
+        </div>
+      `,
+    });
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error sending counseling confirmation:', error);
+    return { success: false, error };
+  }
+}
+
 export async function sendMentorAssignmentEmail(params: { mentorEmail: string; mentorName: string; studentName: string }) {
   if (!resend) {
     console.log(`[Resend Email Mock] Mentor assignment notice sent to ${params.mentorEmail}`);

@@ -115,7 +115,7 @@ export function CounselingFormModal({ onSuccess }: CounselingFormModalProps) {
           {isSubmitted && (
             <div className="flex items-center gap-2 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
               <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
-              Request sent confidentially! Any on-duty Associate Coordinator can now see and respond to this.
+              Request sent confidentially! Every Associate Coordinator has been notified and can respond to this.
             </div>
           )}
         </form>
