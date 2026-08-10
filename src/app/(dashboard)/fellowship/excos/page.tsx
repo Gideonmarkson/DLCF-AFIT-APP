@@ -76,7 +76,7 @@ export default function StudentExcosPage() {
                 DLCF AFIT Student Executive Committee
               </h1>
               <p className="text-xs text-[#6B7280] font-medium">
-                Meet your elected and appointed student leaders (200L - 500L Students) across all fellowship directorates.
+                Meet your Spiritually selected and appointed student leaders (200L - 500L Students) across all fellowship directorates.
               </p>
             </div>
           </div>
