@@ -1,7 +1,6 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
-import { Award, GraduationCap, Mail, Phone, Calendar, Search, MessageCircle } from 'lucide-react';
+import { Award, Mail, Phone, Search, MessageCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,8 +19,8 @@ interface ExcoMember {
   initials: string;
   phone: string;
   tenureSession: string;
+  avatarUrl: string | null;
 }
-
 
 export default function StudentExcosPage() {
   const [excos, setExcos] = useState<ExcoMember[]>([]);
@@ -33,8 +32,9 @@ export default function StudentExcosPage() {
       const supabase = createClient();
       const { data } = await supabase
         .from('profiles')
-        .select('id, full_name, executive_office, department, current_level, cgpa, phone_number, tenure_session')
+        .select('id, full_name, executive_office, department, current_level, cgpa, phone_number, tenure_session, avatar_url')
         .eq('role', 'STUDENT_EXECUTIVE');
+
       setExcos(
         (data ?? []).map((p) => ({
           id: p.id,
@@ -44,9 +44,16 @@ export default function StudentExcosPage() {
           level: p.current_level ? `${p.current_level}L` : '—',
           cgpa: p.cgpa ?? 0,
           bio: `Serving as ${p.executive_office ?? 'a Student Executive'} for the fellowship.`,
-          initials: (p.full_name ?? 'U U').split(' ').filter(Boolean).slice(0, 2).map((w: string) => w[0]).join('').toUpperCase(),
+          initials: (p.full_name ?? 'U U')
+            .split(' ')
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((w: string) => w[0])
+            .join('')
+            .toUpperCase(),
           phone: p.phone_number ?? '',
           tenureSession: p.tenure_session ?? '',
+          avatarUrl: p.avatar_url ?? null,
         }))
       );
     };
@@ -127,8 +134,17 @@ export default function StudentExcosPage() {
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-[#1D4ED8] text-white font-extrabold flex items-center justify-center text-sm ring-4 ring-[#EFF6FF] shadow-sm flex-shrink-0">
-                    {exco.initials}
+                  <div className="w-12 h-12 rounded-full bg-[#1D4ED8] text-white font-extrabold flex items-center justify-center text-sm ring-4 ring-[#EFF6FF] shadow-sm flex-shrink-0 overflow-hidden">
+                    {exco.avatarUrl ? (
+                      <img
+                        src={exco.avatarUrl}
+                        alt={`${exco.name}'s profile photo`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      exco.initials
+                    )}
                   </div>
                   <div>
                     <CardTitle className="text-sm font-extrabold text-[#1F2937]">{exco.name}</CardTitle>
@@ -142,7 +158,6 @@ export default function StudentExcosPage() {
                 </Badge>
               </div>
             </CardHeader>
-
             <CardContent className="space-y-3">
               <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-1 text-xs">
                 <div className="flex items-center justify-between">
@@ -154,11 +169,9 @@ export default function StudentExcosPage() {
                   <span className="font-bold text-[#1D4ED8]">{exco.level} Student</span>
                 </div>
               </div>
-
               <p className="text-xs text-[#4B5563] leading-relaxed font-medium">
                 {exco.bio}
               </p>
-
               <div className="flex items-center gap-2 pt-2 border-t border-[#E2E8F0]">
                 <a href={`tel:${exco.phone}`} className="flex-1">
                   <Button variant="outline" size="sm" className="w-full gap-1 text-xs border-[#1D4ED8] text-[#1D4ED8] hover:bg-[#EFF6FF]">
