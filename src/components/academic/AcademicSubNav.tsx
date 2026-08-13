@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { GraduationCap, Users, Calculator, Folder, Award } from 'lucide-react';
+import { GraduationCap, Users, Calculator, Folder, Award, ShieldCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRole } from '@/context/RoleContext';
 
@@ -18,6 +18,7 @@ export function AcademicSubNav() {
     { href: '/academic/course-registration', label: 'Course Registration', icon: GraduationCap, studentOnly: true },
     { href: '/academic/peer-network', label: 'Peer Mentorship Network', icon: Users, studentOnly: true },
     { href: '/academic/results/upload', label: 'Upload Semester Results & CGPA', icon: Calculator, studentOnly: true },
+    { href: '/academic/results/verification', label: 'Verify Results', icon: ShieldCheck, studentOnly: false },
     { href: '/academic/resources', label: 'AFIT Past Questions Hub', icon: Folder, studentOnly: false },
     { href: '/academic/scholarships', label: 'Scholarships & Grants (Countdown)', icon: Award, studentOnly: false },
   ];
