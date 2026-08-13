@@ -75,9 +75,6 @@ export default function ResultsUploadPage() {
 
     if (upsertError) { setError(upsertError.message); return; }
 
-    // Keep the profile's headline CGPA in sync with the latest logged result.
-    await supabase.from('profiles').update({ cgpa: Number(gpa) }).eq('id', user.id);
-
     setSuccess(true);
     setGpa('');
     setSlipFile(null);
@@ -90,7 +87,7 @@ export default function ResultsUploadPage() {
       <AcademicSubNav />
       <div>
         <h1 className="text-xl font-extrabold text-[#1F2937] flex items-center gap-2">
-          <Calculator className="w-5 h-5 text-[#1D4ED8]" /> Confidential Semester Result Slip Upload &amp; CGPA Calculator
+          <Calculator className="w-5 h-5 text-[#1D4ED8]" /> Confidential Semester Result Slip Upload &amp; GPA Record
         </h1>
         <p className="text-xs text-[#6B7280] font-medium">
           Log your semester GPA and upload your official AFIT result slip — visible only to you, Associate Coordinators, and the Academic Secretary.
@@ -136,7 +133,7 @@ export default function ResultsUploadPage() {
             {error && <p className="text-xs text-red-600 font-bold">{error}</p>}
             {success && (
               <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Result logged and CGPA updated.
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Semester result logged successfully..
               </div>
             )}
 
