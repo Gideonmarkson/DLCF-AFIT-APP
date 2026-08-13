@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
@@ -53,9 +53,39 @@ export default function ProfileSetupPage() {
   // Multi-select state for Fellowship Units
   const [selectedUnits, setSelectedUnits] = useState<string[]>(profile.fellowshipUnits ?? []);
   
-  const [residence, setResidence] = useState('AFIT Flying Officers Hostel Block C');
+  const [residence, setResidence] = useState('');
   const [loading, setLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+  let cancelled = false;
+
+  const loadResidence = async () => {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('residence')
+      .eq('id', user.id)
+      .single();
+
+    if (!cancelled && !error) {
+      setResidence(data?.residence ?? '');
+    }
+  };
+
+  loadResidence();
+
+  return () => {
+    cancelled = true;
+  };
+}, []);
+
 
   const isStaff = userRole === 'ASSOCIATE_COORDINATOR';
   const isExco = userRole === 'STUDENT_EXECUTIVE';
@@ -158,6 +188,7 @@ export default function ProfileSetupPage() {
         matric_number: matricNo || null,
         cgpa: Number(cgpa) || 0,
         fellowship_units: selectedUnits,
+        residence: residence.trim() || null,
       })
       .eq('id', user.id);
 
@@ -491,7 +522,7 @@ export default function ProfileSetupPage() {
                 />
               </div>
               <p className="text-[10px] text-[#9CA3AF]">
-                Campus residence isn&apos;t saved yet — still needs a database column. Everything else on this page, including fellowship units now, saves for real.
+                Your Campus residence / hostel is saved with your profile and can be updated at any time.
               </p>
             </div>
 
