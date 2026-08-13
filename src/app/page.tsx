@@ -50,8 +50,9 @@ export default function WelcomeLandingPage() {
               />
             </div>
             <div>
-              <div className="text-base font-extrabold text-[#1F2937] tracking-tight leading-tight">
-                DLCF AFIT
+              <div className="text-base font-extrabold tracking-tight leading-tight">
+                <span className="text-[#1F2937] mr-1">DLCF</span>
+                <span className="text-[#1D4ED8]">AFIT</span>
               </div>
               <div className="text-[10px] font-extrabold text-[#1D4ED8]">
                 Air Force Institute of Technology
@@ -104,7 +105,7 @@ export default function WelcomeLandingPage() {
           </div>
 
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-[#1F2937] tracking-tight max-w-4xl mx-auto leading-tight">
-            EMPOWERING <span className="text-[#1D4ED8]">SAINTLY INTELLECTUALS</span> AT AFIT KADUNA
+            EMPOWERING <span className="text-[#1D4ED8]">SAINTLY INTELLECTUALS</span> AT DLCF <span className="text-[#1D4ED8]">AFIT</span> KADUNA
           </h1>
 
           <p className="text-sm sm:text-base text-[#4B5563] max-w-2xl mx-auto font-medium leading-relaxed">
@@ -180,11 +181,7 @@ export default function WelcomeLandingPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-extrabold text-[#4B5563]">
-              <Link href="/dashboard" className="hover:text-[#1D4ED8]">Portal Home</Link>
-              <Link href="/academic/course-registration" className="hover:text-[#1D4ED8]">Academic Network</Link>
-              <Link href="/fellowship/excos" className="hover:text-[#1D4ED8]">Student Excos</Link>
-              <Link href="/fellowship/coordinators" className="hover:text-[#1D4ED8]">Associate Coordinators</Link>
+            <div className="flex items-center justify-center">
               <HelpContactsButton />
             </div>
           </div>
