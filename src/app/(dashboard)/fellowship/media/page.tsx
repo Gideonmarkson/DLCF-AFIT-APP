@@ -543,7 +543,7 @@ export default function MediaRepositoryPage() {
 
       {showUploadModal && canUploadMedia && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1F2937]/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-lg rounded-3xl border border-[#E2E8F0] bg-white p-6 shadow-2xl space-y-4 font-sans">
+          <div className="w-full max-w-lg max-h-[calc(100vh-2rem)] overflow-y-auto rounded-3xl border border-[#E2E8F0] bg-white p-6 shadow-2xl space-y-4 font-sans">
             <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
               <div className="flex items-center gap-2">
                 <Upload className="w-5 h-5 text-[#1D4ED8]" />
