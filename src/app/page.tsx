@@ -9,6 +9,8 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import HelpContactsButton from '@/components/landing/HelpContactsButton';
+
 
 export default function WelcomeLandingPage() {
   return (
@@ -182,6 +184,7 @@ export default function WelcomeLandingPage() {
               <Link href="/academic/course-registration" className="hover:text-[#1D4ED8]">Academic Network</Link>
               <Link href="/fellowship/excos" className="hover:text-[#1D4ED8]">Student Excos</Link>
               <Link href="/fellowship/coordinators" className="hover:text-[#1D4ED8]">Associate Coordinators</Link>
+              <HelpContactsButton />
             </div>
           </div>
 
@@ -189,8 +192,25 @@ export default function WelcomeLandingPage() {
             <div>
               © 2026 Deeper Life Campus Fellowship (DLCF), Air Force Institute of Technology (AFIT), Kaduna.
             </div>
-            <div className="flex items-center gap-1 text-[#1D4ED8] font-bold">
-              <CheckCircle2 className="w-3.5 h-3.5 text-[#1D4ED8]" /> Built for Academic &amp; Spiritual Excellence
+
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] font-bold">
+              <a href="https://youtube.com/@dlcfafit?si=rW_nA0xM7bBbqoxb" target="_blank" rel="noopener noreferrer" className="text-[#4B5563] hover:text-[#1D4ED8] transition-colors">
+                YouTube
+              </a>
+              <a href="https://x.com/DLCF_AFIT" target="_blank" rel="noopener noreferrer" className="text-[#4B5563] hover:text-[#1D4ED8] transition-colors">
+                X / Twitter
+              </a>
+              <a href="https://www.facebook.com/share/1FSGTr8ZG1/" target="_blank" rel="noopener noreferrer" className="text-[#4B5563] hover:text-[#1D4ED8] transition-colors">
+                Facebook
+              </a>
+              <a href="https://www.instagram.com/dlcfafit?igsh=NXhocTJ5eDVvM3Fi" target="_blank" rel="noopener noreferrer" className="text-[#4B5563] hover:text-[#1D4ED8] transition-colors">
+                Instagram
+              </a>
+              <span className="hidden sm:inline text-[#CBD5E1]">•</span>
+              <div className="flex items-center gap-1 text-[#1D4ED8]">
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#1D4ED8]" />
+                Built for Academic &amp; Spiritual Excellence
+              </div>
             </div>
           </div>
         </div>
