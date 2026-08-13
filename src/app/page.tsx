@@ -7,6 +7,13 @@ import {
   GraduationCap,
   ArrowRight,
   CheckCircle2,
+  Users,
+  House,
+  ShieldCheck,
+  Youtube,
+  Twitter,
+  Facebook,
+  Instagram,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import HelpContactsButton from '@/components/landing/HelpContactsButton';
@@ -121,49 +128,43 @@ export default function WelcomeLandingPage() {
         </div>
       </section>
 
-      {/* ================= 3. IMPACT & PERFORMANCE METRICS GRID ================= */}
-      <section className="py-12 bg-white border-b border-[#E2E8F0]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <h2 className="text-xs font-extrabold uppercase tracking-wider text-[#1D4ED8]">
-              HUB METRICS &amp; PERFORMANCE
-            </h2>
-            <p className="text-xl font-extrabold text-[#1F2937] mt-1">
-              Built to foster academic distinction and spiritual integrity across all AFIT departments
-            </p>
-          </div>
+      <section className="py-10 bg-white border-b border-[#E2E8F0]">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="flex flex-wrap items-center justify-center gap-3">
+      <Link
+        href="/dashboard"
+        className="flex items-center gap-2 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3 text-xs font-extrabold text-[#1F2937] hover:border-[#1D4ED8] hover:text-[#1D4ED8] transition-colors"
+      >
+        <House className="w-4 h-4" />
+        Portal Home
+      </Link>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Metric 1 */}
-            <div className="p-6 rounded-3xl bg-[#F8FAFC] border border-[#E2E8F0] text-center space-y-1 shadow-2xs hover:border-[#1D4ED8] transition-colors">
-              <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#1D4ED8]">100%</div>
-              <div className="text-xs font-extrabold text-[#1F2937]">Confidential RLS Security</div>
-              <p className="text-[11px] text-[#6B7280] font-medium">Protected Result Slips &amp; Counseling</p>
-            </div>
+      <Link
+        href="/academic/course-registration"
+        className="flex items-center gap-2 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3 text-xs font-extrabold text-[#1F2937] hover:border-[#1D4ED8] hover:text-[#1D4ED8] transition-colors"
+      >
+        <GraduationCap className="w-4 h-4" />
+        Academic Network
+      </Link>
 
-            {/* Metric 2 */}
-            <div className="p-6 rounded-3xl bg-[#F8FAFC] border border-[#E2E8F0] text-center space-y-1 shadow-2xs hover:border-[#1D4ED8] transition-colors">
-              <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#D97706]">4.82</div>
-              <div className="text-xs font-extrabold text-[#1F2937]">Top Senior Mentor CGPA</div>
-              <p className="text-[11px] text-[#6B7280] font-medium">Grade &apos;A&apos; Senior Brethren Paired</p>
-            </div>
+      <Link
+        href="/fellowship/excos"
+        className="flex items-center gap-2 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3 text-xs font-extrabold text-[#1F2937] hover:border-[#1D4ED8] hover:text-[#1D4ED8] transition-colors"
+      >
+        <Users className="w-4 h-4" />
+        Student Excos
+      </Link>
 
-            {/* Metric 3 */}
-            <div className="p-6 rounded-3xl bg-[#F8FAFC] border border-[#E2E8F0] text-center space-y-1 shadow-2xs hover:border-[#1D4ED8] transition-colors">
-              <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#1F2937]">248+</div>
-              <div className="text-xs font-extrabold text-[#1F2937]">Tracked AFIT Students</div>
-              <p className="text-[11px] text-[#6B7280] font-medium">Degree, ND &amp; HND Programmes</p>
-            </div>
-
-            {/* Metric 4 */}
-            <div className="p-6 rounded-3xl bg-[#F8FAFC] border border-[#E2E8F0] text-center space-y-1 shadow-2xs hover:border-[#1D4ED8] transition-colors">
-              <div className="text-3xl sm:text-4xl font-extrabold font-mono text-emerald-600">100%</div>
-              <div className="text-xs font-extrabold text-[#1F2937]">Intervention Resolution</div>
-              <p className="text-[11px] text-[#6B7280] font-medium">Early CGPA &amp; Academic Support</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <Link
+        href="/fellowship/coordinators"
+        className="flex items-center gap-2 rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-3 text-xs font-extrabold text-[#1F2937] hover:border-[#1D4ED8] hover:text-[#1D4ED8] transition-colors"
+      >
+        <ShieldCheck className="w-4 h-4" />
+        Associate Coordinators
+      </Link>
+    </div>
+  </div>
+</section>
 
       {/* ================= 4. FOOTER ================= */}
       <footer className="bg-white border-t border-[#E2E8F0] py-12">
@@ -194,19 +195,47 @@ export default function WelcomeLandingPage() {
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] font-bold">
-              <a href="https://youtube.com/@dlcfafit?si=rW_nA0xM7bBbqoxb" target="_blank" rel="noopener noreferrer" className="text-[#4B5563] hover:text-[#1D4ED8] transition-colors">
-                YouTube
-              </a>
-              <a href="https://x.com/DLCF_AFIT" target="_blank" rel="noopener noreferrer" className="text-[#4B5563] hover:text-[#1D4ED8] transition-colors">
-                X / Twitter
-              </a>
-              <a href="https://www.facebook.com/share/1FSGTr8ZG1/" target="_blank" rel="noopener noreferrer" className="text-[#4B5563] hover:text-[#1D4ED8] transition-colors">
-                Facebook
-              </a>
-              <a href="https://www.instagram.com/dlcfafit?igsh=NXhocTJ5eDVvM3Fi" target="_blank" rel="noopener noreferrer" className="text-[#4B5563] hover:text-[#1D4ED8] transition-colors">
-                Instagram
-              </a>
-              <span className="hidden sm:inline text-[#CBD5E1]">•</span>
+  <a
+    href="https://youtube.com/@dlcfafit?si=rW_nA0xM7bBbqoxb"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center gap-1.5 text-[#4B5563] hover:text-[#1D4ED8] transition-colors"
+  >
+    <Youtube className="w-3.5 h-3.5" />
+    YouTube
+  </a>
+
+  <a
+    href="https://x.com/DLCF_AFIT"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center gap-1.5 text-[#4B5563] hover:text-[#1D4ED8] transition-colors"
+  >
+    <Twitter className="w-3.5 h-3.5" />
+    X / Twitter
+  </a>
+
+  <a
+    href="https://www.facebook.com/share/1FSGTr8ZG1/"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center gap-1.5 text-[#4B5563] hover:text-[#1D4ED8] transition-colors"
+  >
+    <Facebook className="w-3.5 h-3.5" />
+    Facebook
+  </a>
+
+  <a
+    href="https://www.instagram.com/dlcfafit?igsh=NXhocTJ5eDVvM3Fi"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center gap-1.5 text-[#4B5563] hover:text-[#1D4ED8] transition-colors"
+  >
+    <Instagram className="w-3.5 h-3.5" />
+    Instagram
+  </a>
+
+  <span className="hidden sm:inline text-[#CBD5E1]">•</span>
               <div className="flex items-center gap-1 text-[#1D4ED8]">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#1D4ED8]" />
                 Built for Academic &amp; Spiritual Excellence
