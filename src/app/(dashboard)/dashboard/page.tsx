@@ -151,7 +151,6 @@ export default function DashboardPage() {
                         ? ` (${profile.executiveOffice})`
                         : ''}
                     </h1>
-                    <Badge variant="role">Student Exco</Badge>
                   </div>
                   <p className="text-xs text-[#6B7280] font-medium mt-0.5">
                     Your governance tools and live fellowship records are available
@@ -379,7 +378,6 @@ export default function DashboardPage() {
                 resources are available in the Spiritual Nurture section.
               </div>
               <div className="text-[11px] text-blue-200 pt-2 border-t border-white/10 font-medium">
-                No fabricated scripture, date, or author data is displayed here.
               </div>
             </div>
 
