@@ -172,7 +172,12 @@ export function Header({
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
-        <button type="button" className="p-2 sm:p-2.5 text-[#6B7280] hover:text-[#1D4ED8] rounded-full hover:bg-[#EFF6FF] transition-colors" aria-label="Search">
+        <button
+          type="button" 
+          onClick={() => router.push('/search')}
+          aria-label="Search the fellowship hub"
+          className="p-2 sm:p-2.5 text-[#6B7280] hover:text-[#1D4ED8] rounded-full hover:bg-[#EFF6FF] transition-colors"
+        >
           <Search className="w-4 h-4 sm:w-5 sm:h-5 stroke-[1.75px]" />
         </button>
 
