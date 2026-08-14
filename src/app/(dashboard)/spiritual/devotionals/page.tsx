@@ -1,117 +1,16 @@
 'use client';
-
-import React, { useState } from 'react';
-import { DevotionalBanner } from '@/components/spiritual/DevotionalBanner';
-import { generateStudyPlan } from '@/lib/gemini';
-import { BookOpen, Calendar, Clock, GraduationCap, CheckCircle2 } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-
-export default function DevotionalsPage() {
-  const [coursesInput, setCoursesInput] = useState('AEE 311, MET 301, EEE 301');
-  const [targetCgpa, setTargetCgpa] = useState(4.50);
-  const [hours, setHours] = useState(15);
-  const [studyPlanMarkdown, setStudyPlanMarkdown] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleGeneratePlan = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    const courseList = coursesInput.split(',').map((c) => c.trim()).filter(Boolean);
-    const result = await generateStudyPlan(courseList, targetCgpa, hours);
-    setStudyPlanMarkdown(result);
-    setLoading(false);
-  };
-
-  return (
-    <div className="space-y-6 font-sans">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-extrabold text-[#1F2937] flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-[#1D4ED8]" />
-            Devotionals &amp; Bible Study Schedule Builder
-          </h1>
-          <p className="text-xs text-[#6B7280]">
-            Combine daily spiritual nurture with personalized academic schedule creation tailored for AFIT coursework.
-          </p>
-        </div>
-        <a href="https://www.dailymanna.app/" target="_blank" rel="noopener noreferrer">
-          <Button type="button" variant="primary" className="gap-2 text-xs font-bold rounded-xl whitespace-nowrap">
-            <BookOpen className="w-4 h-4" /> Open Daily Devotional Guide
-          </Button>
-        </a>
-      </div>
-
-      <DevotionalBanner />
-
-      {/* Bible & Academic Study Schedule Builder Form */}
-      <Card className="border-[#E2E8F0] bg-white shadow-xs">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-extrabold text-[#1F2937] flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-[#1D4ED8]" />
-              Bible &amp; Academic Study Schedule Builder
-            </CardTitle>
-          </div>
-          <CardDescription className="text-xs text-[#6B7280]">
-            Generate an active recall study &amp; scripture reflection timetable based on your specific AFIT engineering course load.
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent className="space-y-4">
-          <form onSubmit={handleGeneratePlan} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-extrabold text-[#1F2937] mb-1">Course Codes (Comma separated)</label>
-              <Input
-                value={coursesInput}
-                onChange={(e) => setCoursesInput(e.target.value)}
-                placeholder="AEE 311, MET 301"
-                className="text-xs font-mono font-bold"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-extrabold text-[#1F2937] mb-1">Target CGPA Goal</label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                max="5.0"
-                value={targetCgpa}
-                onChange={(e) => setTargetCgpa(Number(e.target.value))}
-                className="text-xs font-mono font-bold"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-extrabold text-[#1F2937] mb-1">Weekly Study Hours Available</label>
-              <Input
-                type="number"
-                min="1"
-                max="60"
-                value={hours}
-                onChange={(e) => setHours(Number(e.target.value))}
-                className="text-xs font-bold"
-                required
-              />
-            </div>
-
-            <div className="sm:col-span-3 flex justify-end">
-              <Button type="submit" variant="primary" disabled={loading} className="gap-2 text-xs font-bold rounded-xl">
-                <Calendar className="w-4 h-4" />
-                {loading ? 'Building Bible & Academic Timetable...' : 'Generate Bible & Academic Study Schedule'}
-              </Button>
-            </div>
-          </form>
-
-          {studyPlanMarkdown && (
-            <div className="mt-4 p-5 rounded-2xl bg-[#EFF6FF] border border-[#1D4ED8]/20 text-xs leading-relaxed font-sans text-[#1F2937] whitespace-pre-wrap space-y-2 animate-fadeIn shadow-xs">
-              {studyPlanMarkdown}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
+import React,{useEffect,useState} from 'react';
+import {DevotionalBanner} from '@/components/spiritual/DevotionalBanner';
+import {generatePersonalStudyPlan,generateStudyPlan} from '@/lib/gemini';
+import {BookOpen,Calendar,GraduationCap,CheckCircle2,HeartHandshake} from 'lucide-react';
+import {Card,CardHeader,CardTitle,CardDescription,CardContent} from '@/components/ui/card';
+import {Button} from '@/components/ui/button';
+import {Input} from '@/components/ui/input';
+import {useRole} from '@/context/RoleContext';
+export default function DevotionalsPage(){
+ const {userRole,profile}=useRole(); const isAssociateCoordinator=userRole==='ASSOCIATE_COORDINATOR';
+ const [topicsInput,setTopicsInput]=useState(''),[targetCgpa,setTargetCgpa]=useState(''),[hours,setHours]=useState(''),[studyPlanMarkdown,setStudyPlanMarkdown]=useState<string|null>(null),[loading,setLoading]=useState(false);
+ useEffect(()=>{if(!isAssociateCoordinator&&Number(profile.cgpa)>0)setTargetCgpa(Number(profile.cgpa).toFixed(2));},[isAssociateCoordinator,profile.cgpa]);
+ const handleGeneratePlan=async(e:React.FormEvent)=>{e.preventDefault();const topics=topicsInput.split(',').map(v=>v.trim()).filter(Boolean),h=Number(hours);if(!topics.length||!Number.isFinite(h)||h<1)return;setLoading(true);try{setStudyPlanMarkdown(isAssociateCoordinator?await generatePersonalStudyPlan(topics,h):await generateStudyPlan(topics,Number(targetCgpa),h));}finally{setLoading(false);}};
+ return <div className="space-y-6 font-sans"><div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3"><div><h1 className="text-xl font-extrabold text-[#1F2937] flex items-center gap-2">{isAssociateCoordinator?<HeartHandshake className="w-5 h-5 text-[#1D4ED8]"/>:<GraduationCap className="w-5 h-5 text-[#1D4ED8]"/>}{isAssociateCoordinator?'Devotionals & Bible Study':'Devotionals & Bible Study Schedule Builder'}</h1><p className="text-xs text-[#6B7280]">{isAssociateCoordinator?'Create a personal spiritual study timetable around topics you choose.':'Create a personalized study schedule from your own AFIT courses and academic goal.'}</p></div><a href="https://www.dailymanna.app/" target="_blank" rel="noopener noreferrer"><Button type="button" variant="primary" className="gap-2 text-xs font-bold rounded-xl"><BookOpen className="w-4 h-4"/>Open Daily Devotional Guide</Button></a></div><DevotionalBanner/><Card className="border-[#E2E8F0] bg-white shadow-xs"><CardHeader><CardTitle className="text-base font-extrabold text-[#1F2937] flex items-center gap-2"><Calendar className="w-5 h-5 text-[#1D4ED8]"/>{isAssociateCoordinator?'Bible & Personal Study Schedule Builder':'Bible & Academic Study Schedule Builder'}</CardTitle><CardDescription className="text-xs text-[#6B7280]">{isAssociateCoordinator?'Generate a personal Bible and study timetable from topics you enter yourself.':'Generate a Bible and academic study timetable from the courses you enter yourself.'}</CardDescription></CardHeader><CardContent><form onSubmit={handleGeneratePlan} className="grid grid-cols-1 sm:grid-cols-3 gap-3"><div className={isAssociateCoordinator?'sm:col-span-2':''}><label className="block text-xs font-extrabold mb-1">{isAssociateCoordinator?'Personal Study Topics (Comma separated)':'Course Codes (Comma separated)'}</label><Input value={topicsInput} onChange={e=>setTopicsInput(e.target.value)} placeholder={isAssociateCoordinator?'e.g. prayer, leadership, calculus':'e.g. AEE 311, MET 301, EEE 301'} className="text-xs font-mono font-bold" required/></div>{!isAssociateCoordinator&&<div><label className="block text-xs font-extrabold mb-1">Target CGPA Goal</label><Input type="number" step="0.01" min="0" max="5" value={targetCgpa} onChange={e=>setTargetCgpa(e.target.value)} className="text-xs font-mono font-bold" placeholder={Number(profile.cgpa)>0?String(profile.cgpa):'e.g. 4.50'} required/></div>}<div><label className="block text-xs font-extrabold mb-1">Weekly Study Hours Available</label><Input type="number" min="1" max="60" value={hours} onChange={e=>setHours(e.target.value)} className="text-xs font-bold" placeholder="e.g. 12" required/></div><div className="sm:col-span-3 flex justify-end"><Button type="submit" variant="primary" disabled={loading} className="gap-2 text-xs font-bold rounded-xl"><Calendar className="w-4 h-4"/>{loading?'Building Personalised Schedule...':'Generate Study Schedule'}</Button></div></form>{studyPlanMarkdown&&<div className="mt-4 p-5 rounded-2xl bg-[#EFF6FF] border border-[#1D4ED8]/20 text-xs leading-relaxed whitespace-pre-wrap text-[#1F2937]">{studyPlanMarkdown}</div>}<div className="pt-4 flex items-center gap-2 text-[11px] text-[#6B7280]"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-600"/>No fabricated courses or fixed personal topics are prefilled.</div></CardContent></Card></div>;
 }
