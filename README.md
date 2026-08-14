@@ -38,4 +38,4 @@ Configure the required Supabase, Gemini, Resend, and role-passcode environment v
 
 ## Project
 
-DLCF AFIT, Kaduna — 2026
+DLCF AFIT, Kaduna 2026

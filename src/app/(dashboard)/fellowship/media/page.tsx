@@ -53,6 +53,16 @@ function formatFileSize(bytes?: number) {
   return `${mb.toFixed(1)} MB`;
 }
 
+function guessExtension(url: string) {
+  try {
+    const pathname = new URL(url).pathname;
+    const match = pathname.match(/\.([a-zA-Z0-9]+)$/);
+    return match ? `.${match[1]}` : '';
+  } catch {
+    return '';
+  }
+}
+
 function isVideo(item: MediaItem) {
   return item.category === 'SPECIAL_VIDEO';
 }
@@ -153,21 +163,52 @@ export default function MediaRepositoryPage() {
   };
 
   const handleDownload = async (item: MediaItem) => {
-    const nextCount = item.downloadsCount + 1;
+    // media_items' UPDATE policy only allows a row's own creator to write to
+    // it, so a plain client-side .update() silently failed (no thrown error,
+    // just an RLS-blocked no-op) for every download made by anyone else.
+    // This RPC runs as SECURITY DEFINER so any authenticated user can
+    // atomically bump the counter without touching anything else on the row.
+    const { data: newCount, error: rpcError } = await supabase.rpc(
+      'increment_media_download_count',
+      { p_media_id: item.id }
+    );
+
     setItems((current) =>
       current.map((entry) =>
         entry.id === item.id
-          ? { ...entry, downloadsCount: nextCount }
+          ? {
+              ...entry,
+              downloadsCount:
+                !rpcError && typeof newCount === 'number'
+                  ? newCount
+                  : entry.downloadsCount + 1,
+            }
           : entry
       )
     );
 
-    await supabase
-      .from('media_items')
-      .update({ download_count: nextCount })
-      .eq('id', item.id);
+    if (item.sourceType === 'YOUTUBE') {
+      window.open(item.mediaUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
 
-    window.open(item.mediaUrl, '_blank', 'noopener,noreferrer');
+    // A plain window.open() on a Supabase Storage URL just navigates to /
+    // renders the file (images and PDFs open inline instead of downloading).
+    // Appending Storage's `download` query param forces
+    // Content-Disposition: attachment so the browser actually saves it.
+    const extension = guessExtension(item.mediaUrl);
+    const safeName =
+      item.title.replace(/[^a-zA-Z0-9._-]/g, '_') || 'download';
+    const downloadUrl = `${item.mediaUrl}${
+      item.mediaUrl.includes('?') ? '&' : '?'
+    }download=${encodeURIComponent(`${safeName}${extension}`)}`;
+
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.rel = 'noopener noreferrer';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   };
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
@@ -232,7 +273,8 @@ export default function MediaRepositoryPage() {
         speaker_or_unit: newSpeaker.trim(),
         description: newDescription.trim() || null,
         media_url: mediaUrl,
-        thumbnail_url: FALLBACK_THUMBNAIL,
+        thumbnail_url:
+          newCategory === 'FLYER' ? mediaUrl : FALLBACK_THUMBNAIL,
         source_type: sourceType,
         storage_path: storagePath,
         created_by: user.id,
@@ -461,12 +503,22 @@ export default function MediaRepositoryPage() {
               </CardHeader>
 
               <CardContent className="space-y-4">
-                <div className="relative w-full h-44 rounded-2xl overflow-hidden border border-[#E2E8F0] bg-[#F8FAFC]">
+                <div
+                  className={`relative w-full rounded-2xl overflow-hidden border border-[#E2E8F0] bg-[#F8FAFC] ${
+                    item.category === 'FLYER' ? 'h-80' : 'h-44'
+                  }`}
+                >
                   <Image
-                    src={item.thumbnailUrl || FALLBACK_THUMBNAIL}
+                    src={
+                      item.category === 'FLYER'
+                        ? item.mediaUrl || FALLBACK_THUMBNAIL
+                        : item.thumbnailUrl || FALLBACK_THUMBNAIL
+                    }
                     alt={item.title}
                     fill
-                    className="object-cover"
+                    className={
+                      item.category === 'FLYER' ? 'object-contain' : 'object-cover'
+                    }
                   />
                   <div className="absolute inset-0 bg-[#1F2937]/30 flex items-center justify-center">
                     {renderMediaControl(item)}
