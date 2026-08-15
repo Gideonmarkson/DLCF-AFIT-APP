@@ -194,7 +194,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <Link href="/admin/counseling-manage">
+              <Link href="/spiritual/counseling">
                 <Button
                   variant="primary"
                   className="gap-2 shrink-0 rounded-xl"

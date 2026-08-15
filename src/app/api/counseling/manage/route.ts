@@ -39,8 +39,14 @@ export async function POST(request: NextRequest) {
 
   if (action === 'status') {
     const status = body.status;
-    if (!['IN_PROGRESS', 'RESOLVED'].includes(status)) {
-      return NextResponse.json({ error: 'Invalid status.' }, { status: 400 });
+    // RESOLVED is intentionally not allowed here. A ticket may only become
+    // RESOLVED by sending a reply (below), so the resolution email to the
+    // student is never skipped by a direct status flip.
+    if (status !== 'IN_PROGRESS') {
+      return NextResponse.json(
+        { error: 'A ticket can only be resolved by sending a reply, so the student is notified.' },
+        { status: 400 }
+      );
     }
     const { error } = await supabase.from('counseling_requests').update({ status }).eq('id', ticketId);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
