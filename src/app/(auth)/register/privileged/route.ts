@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
       excoOffice,
       matricNo,
       tenureSession,
+      coordinatorRoleTitle,
     } = payload;
 
     if (!email || !password || !fullName || !department) {
@@ -120,7 +121,12 @@ export async function POST(req: NextRequest) {
       current_level: registrationType === 'student' || registrationType === 'exco' ? normalizeLevel(level) : null,
       matric_number: registrationType === 'student' ? matricNo ?? null : null,
       role,
-      executive_office: registrationType === 'exco' ? excoOffice ?? null : null,
+      executive_office:
+        registrationType === 'exco'
+          ? excoOffice ?? null
+          : registrationType === 'coordinator'
+            ? coordinatorRoleTitle ?? null
+            : null,
       tenure_session: registrationType === 'exco' ? tenureSession ?? null : null,
       cgpa: registrationType === 'exco' ? Number(cgpa) || 0 : 0,
     };

@@ -20,6 +20,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toWhatsAppNumber } from '@/lib/utils';
 
 interface CoordinatorMember {
   id: string;
@@ -50,13 +51,13 @@ export default function AssociateCoordinatorsDirectoryPage() {
       const supabase = createClient();
       const { data } = await supabase
         .from('profiles')
-        .select('id, full_name, department, email, phone_number')
+        .select('id, full_name, department, email, phone_number, executive_office')
         .eq('role', 'ASSOCIATE_COORDINATOR');
       setCoordinators(
         (data ?? []).map((p) => ({
           id: p.id,
           name: p.full_name ?? 'Unnamed',
-          officialTitle: 'Associate Coordinator',
+          officialTitle: p.executive_office ?? 'Associate Coordinator',
           afitPosition: p.department ?? 'AFIT Staff / Advisor',
           fellowshipFocus: 'Pastoral care, academic mentorship, and counseling support for students.',
           consultationHours: 'Contact directly to arrange',
@@ -221,16 +222,20 @@ export default function AssociateCoordinatorsDirectoryPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-2 pt-2">
-                <a href={`tel:${coord.phone}`}>
-                  <Button variant="outline" size="sm" className="w-full gap-1 text-xs border-[#1D4ED8] text-[#1D4ED8] hover:bg-[#EFF6FF]">
-                    <Phone className="w-3.5 h-3.5" /> Call
-                  </Button>
-                </a>
-                <a href={`https://wa.me/${coord.phone.replace(/[^\d]/g, '')}`} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" size="sm" className="w-full gap-1 text-xs border-emerald-600 text-emerald-700 hover:bg-emerald-50">
-                    <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
-                  </Button>
-                </a>
+                {coord.phone && (
+                  <a href={`tel:${coord.phone}`}>
+                    <Button variant="outline" size="sm" className="w-full gap-1 text-xs border-[#1D4ED8] text-[#1D4ED8] hover:bg-[#EFF6FF]">
+                      <Phone className="w-3.5 h-3.5" /> Call
+                    </Button>
+                  </a>
+                )}
+                {toWhatsAppNumber(coord.phone) && (
+                  <a href={`https://wa.me/${toWhatsAppNumber(coord.phone)}`} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" size="sm" className="w-full gap-1 text-xs border-emerald-600 text-emerald-700 hover:bg-emerald-50">
+                      <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                    </Button>
+                  </a>
+                )}
                 <a href={`mailto:${coord.email}`}>
                   <Button variant="outline" size="sm" className="w-full gap-1 text-xs border-[#6B7280] text-[#4B5563] hover:bg-[#F1F5F9]">
                     <Mail className="w-3.5 h-3.5" /> Email

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DLCF_EXCO_PORTFOLIOS } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
+import { toWhatsAppNumber } from '@/lib/utils';
 
 interface ExcoMember {
   id: string;
@@ -173,16 +174,20 @@ export default function StudentExcosPage() {
                 {exco.bio}
               </p>
               <div className="flex items-center gap-2 pt-2 border-t border-[#E2E8F0]">
-                <a href={`tel:${exco.phone}`} className="flex-1">
-                  <Button variant="outline" size="sm" className="w-full gap-1 text-xs border-[#1D4ED8] text-[#1D4ED8] hover:bg-[#EFF6FF]">
-                    <Phone className="w-3.5 h-3.5" /> Call
-                  </Button>
-                </a>
-                <a href={`https://wa.me/${exco.phone.replace(/[^\d]/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex-1">
-                  <Button variant="outline" size="sm" className="w-full gap-1 text-xs border-emerald-600 text-emerald-700 hover:bg-emerald-50">
-                    <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
-                  </Button>
-                </a>
+                {exco.phone && (
+                  <a href={`tel:${exco.phone}`} className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full gap-1 text-xs border-[#1D4ED8] text-[#1D4ED8] hover:bg-[#EFF6FF]">
+                      <Phone className="w-3.5 h-3.5" /> Call
+                    </Button>
+                  </a>
+                )}
+                {toWhatsAppNumber(exco.phone) && (
+                  <a href={`https://wa.me/${toWhatsAppNumber(exco.phone)}`} target="_blank" rel="noopener noreferrer" className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full gap-1 text-xs border-emerald-600 text-emerald-700 hover:bg-emerald-50">
+                      <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                    </Button>
+                  </a>
+                )}
               </div>
             </CardContent>
           </Card>

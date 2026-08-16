@@ -51,6 +51,7 @@ export default function AssociateCoordinatorRegistrationPage() {
           phone,
           department: afitPosition,
           level: null,
+          coordinatorRoleTitle: roleTitle,
         }),
       });
 

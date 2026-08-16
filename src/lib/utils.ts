@@ -13,3 +13,19 @@ export function formatDate(dateString: string): string {
     year: 'numeric',
   }).format(date);
 }
+
+// wa.me needs the FULL international number (country code, no leading 0,
+// no '+', no spaces). A Nigerian number typed as "0801 234 5678" or
+// "+234 801 234 5678" both need to become "2348012345678" — if a local
+// "0..." number is sent as-is, wa.me can't resolve a contact and just
+// opens WhatsApp's own home screen instead of the person's chat, which
+// looks exactly like the link "not working."
+export function toWhatsAppNumber(phone: string | null | undefined, defaultCountryCode = '234'): string {
+  const digits = (phone ?? '').replace(/[^\d]/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('00')) return digits.slice(2);
+  if (digits.startsWith(defaultCountryCode)) return digits;
+  if (digits.startsWith('0')) return defaultCountryCode + digits.slice(1);
+  if (digits.length <= 10) return defaultCountryCode + digits;
+  return digits;
+}
