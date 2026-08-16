@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { AFIT_DEPARTMENTS } from '@/lib/constants';
+import { DepartmentSelect } from '@/components/shared/DepartmentSelect';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -178,13 +178,7 @@ export default function RegisterPage() {
             {/* Department Dropdown */}
             <div className="space-y-1">
               <label className="block text-xs font-extrabold text-[#1F2937]">AFIT Department</label>
-              <Select value={department} onChange={(e) => setDepartment(e.target.value)} className="text-xs">
-                {AFIT_DEPARTMENTS.map((dept) => (
-                  <option key={dept.name} value={dept.name}>
-                    {dept.name} ({dept.category})
-                  </option>
-                ))}
-              </Select>
+              <DepartmentSelect value={department} onChange={setDepartment} className="text-xs" showCategory />
             </div>
 
             {/* Level Dropdown */}

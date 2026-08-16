@@ -25,6 +25,7 @@ import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useRole } from '@/context/RoleContext';
 import { AFIT_DEPARTMENTS, FELLOWSHIP_UNITS, DLCF_EXCO_PORTFOLIOS, ASSOCIATE_COORDINATOR_ROLES } from '@/lib/constants';
+import { DepartmentSelect } from '@/components/shared/DepartmentSelect';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 
@@ -414,13 +415,7 @@ export default function ProfileSetupPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                   <div className="sm:col-span-8 space-y-1">
                     <label className="block text-xs font-extrabold text-[#1F2937]">AFIT Department</label>
-                    <Select value={department} onChange={(e) => setDepartment(e.target.value)} className="text-xs">
-                      {AFIT_DEPARTMENTS.map((dept) => (
-                        <option key={dept.name} value={dept.name}>
-                          {dept.name}
-                        </option>
-                      ))}
-                    </Select>
+                    <DepartmentSelect value={department} onChange={setDepartment} className="text-xs" />
                   </div>
 
                   <div className="sm:col-span-4 space-y-1">

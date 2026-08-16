@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { AFIT_DEPARTMENTS } from '@/lib/constants';
+import { DepartmentSelect } from '@/components/shared/DepartmentSelect';
 
 interface RegisteredCourse {
   id: string;
@@ -113,11 +113,7 @@ export function CourseRegistrationForm({ onRegistered }: { onRegistered?: (cours
 
           <div>
             <label className="block text-xs font-extrabold text-[#1F2937] mb-1">Department & Level</label>
-            <Select value={department} onChange={(e) => setDepartment(e.target.value)}>
-              {AFIT_DEPARTMENTS.slice(0, 10).map((d) => (
-                <option key={d.name} value={d.name}>{d.name}</option>
-              ))}
-            </Select>
+            <DepartmentSelect value={department} onChange={setDepartment} required={false} />
           </div>
         </div>
 

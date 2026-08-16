@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AFIT_DEPARTMENTS, DLCF_EXCO_PORTFOLIOS } from '@/lib/constants';
+import { DLCF_EXCO_PORTFOLIOS } from '@/lib/constants';
+import { DepartmentSelect } from '@/components/shared/DepartmentSelect';
 
 export default function ExcoRegistrationPage() {
   const router = useRouter();
@@ -186,13 +187,7 @@ export default function ExcoRegistrationPage() {
             <div className="grid grid-cols-3 gap-2">
               <div className="col-span-2 space-y-1">
                 <label className="block text-xs font-extrabold text-[#1F2937]">Department</label>
-                <Select value={department} onChange={(e) => setDepartment(e.target.value)} className="text-xs">
-                  {AFIT_DEPARTMENTS.slice(0, 10).map((dept) => (
-                    <option key={dept.name} value={dept.name}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </Select>
+                <DepartmentSelect value={department} onChange={setDepartment} className="text-xs" />
               </div>
 
               <div className="space-y-1">
