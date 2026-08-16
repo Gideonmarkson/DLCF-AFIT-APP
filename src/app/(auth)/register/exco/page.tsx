@@ -238,7 +238,10 @@ export default function ExcoRegistrationPage() {
                     placeholder="DLCF-EXCO-2026"
                     value={accreditationToken}
                     onChange={(e) => setAccreditationToken(e.target.value)}
-                    className="pl-9 pr-8 text-xs font-mono uppercase"
+                    className="pl-9 pr-8 text-xs font-mono"
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                    spellCheck={false}
                     required
                   />
                   <button

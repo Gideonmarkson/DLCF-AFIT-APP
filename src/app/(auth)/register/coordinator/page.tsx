@@ -10,12 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-
-const ASSOCIATE_COORDINATOR_ROLES = [
-  'Sub-Group Associate coordinator',
-  'Associate Coordinator (Brother)',
-  'Associate Coordinator (Sister)',
-];
+import { ASSOCIATE_COORDINATOR_ROLES } from '@/lib/constants';
 
 export default function AssociateCoordinatorRegistrationPage() {
   const router = useRouter();
@@ -196,7 +191,10 @@ export default function AssociateCoordinatorRegistrationPage() {
                   placeholder="DLCF-STAFF-PASSCODE-2026"
                   value={authorizationKey}
                   onChange={(e) => setAuthorizationKey(e.target.value)}
-                  className="pl-9 pr-10 text-xs font-mono uppercase"
+                  className="pl-9 pr-10 text-xs font-mono"
+                  autoCapitalize="off"
+                  autoCorrect="off"
+                  spellCheck={false}
                   required
                 />
                 <button

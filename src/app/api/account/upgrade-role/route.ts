@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     }
 
     const payload = (await req.json()) as Record<string, unknown>;
-    const { upgradeType, passcode, excoOffice, tenureSession } = payload;
+    const { upgradeType, passcode, excoOffice, tenureSession, coordinatorRoleTitle } = payload;
 
     if (!['exco', 'coordinator', 'change-office'].includes(upgradeType as string)) {
       return NextResponse.json({ error: 'Invalid upgrade type' }, { status: 400 });
@@ -79,6 +79,8 @@ export async function POST(req: NextRequest) {
     if (upgradeType === 'exco') {
       update.executive_office = excoOffice ?? null;
       update.tenure_session = tenureSession ?? null;
+    } else if (upgradeType === 'coordinator') {
+      update.executive_office = coordinatorRoleTitle ?? null;
     }
 
     const { error: updateError } = await admin.from('profiles').update(update).eq('id', user.id);

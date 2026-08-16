@@ -11,6 +11,7 @@ export const AFIT_DEPARTMENTS: AFITDepartment[] = [
   { name: 'B.Eng Civil Engineering', category: 'DEGREE' },
   { name: 'B.Eng Automotive Engineering', category: 'DEGREE' },
   { name: 'B.Eng Mechatronics Engineering', category: 'DEGREE' },
+  { name: 'B.Eng Metallurgical & Materials Engineering', category: 'DEGREE' },
   { name: 'B.Eng Information & Communication Technology', category: 'DEGREE' },
   { name: 'B.Sc Computer Science', category: 'DEGREE' },
   { name: 'B.Sc Cyber Security', category: 'DEGREE' },
@@ -77,4 +78,10 @@ export const FELLOWSHIP_UNITS = [
   'Publicity',
   'Follow-Up',
   'Sister Welfare',
+];
+
+export const ASSOCIATE_COORDINATOR_ROLES = [
+  'Sub-Group Associate coordinator',
+  'Associate Coordinator (Brother)',
+  'Associate Coordinator (Sister)',
 ];

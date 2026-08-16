@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useRole } from '@/context/RoleContext';
-import { AFIT_DEPARTMENTS, FELLOWSHIP_UNITS, DLCF_EXCO_PORTFOLIOS } from '@/lib/constants';
+import { AFIT_DEPARTMENTS, FELLOWSHIP_UNITS, DLCF_EXCO_PORTFOLIOS, ASSOCIATE_COORDINATOR_ROLES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 
@@ -45,6 +45,7 @@ export default function ProfileSetupPage() {
   // Role-upgrade state (General Students only)
   const [upgradeType, setUpgradeType] = useState<'exco' | 'coordinator'>('exco');
   const [excoOffice, setExcoOffice] = useState(profile.executiveOffice ?? 'General Coordinator');
+  const [coordinatorRoleTitle, setCoordinatorRoleTitle] = useState(ASSOCIATE_COORDINATOR_ROLES[0]);
   const [tenureSession, setTenureSession] = useState(profile.tenureSession ?? '2025/2026');
   const [upgradePasscode, setUpgradePasscode] = useState('');
   const [upgradeError, setUpgradeError] = useState('');
@@ -215,6 +216,7 @@ export default function ProfileSetupPage() {
           passcode: upgradePasscode,
           excoOffice: upgradeType === 'exco' ? excoOffice : undefined,
           tenureSession: upgradeType === 'exco' ? tenureSession : undefined,
+          coordinatorRoleTitle: upgradeType === 'coordinator' ? coordinatorRoleTitle : undefined,
         }),
       });
       const result = await res.json();
@@ -577,6 +579,17 @@ export default function ProfileSetupPage() {
               </div>
             )}
 
+            {upgradeType === 'coordinator' && (
+              <div className="space-y-1">
+                <label className="block text-xs font-extrabold text-[#1F2937]">Coordinator Category</label>
+                <Select value={coordinatorRoleTitle} onChange={(e) => setCoordinatorRoleTitle(e.target.value)} className="text-xs">
+                  {ASSOCIATE_COORDINATOR_ROLES.map((role: string) => (
+                    <option key={role} value={role}>{role}</option>
+                  ))}
+                </Select>
+              </div>
+            )}
+
             {upgradeType === 'exco' && (
               <div className="space-y-1">
                 <label className="block text-xs font-extrabold text-[#1F2937]">Tenure (Academic Session)</label>
@@ -597,6 +610,9 @@ export default function ProfileSetupPage() {
                 onChange={(e) => setUpgradePasscode(e.target.value)}
                 placeholder="Given to you by the fellowship leadership"
                 className="text-xs"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
                 required
               />
             </div>
