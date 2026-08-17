@@ -1,7 +1,26 @@
 -- DLCF AFIT Fellowship Media: authoritative delete permissions.
 -- Existing project structure uses public.media_items and storage bucket media-files.
+-- Normalize media source types used by the current upload UI.
 -- Keep the intended access rule exactly:
 --   ASSOCIATE_COORDINATOR OR STUDENT_EXECUTIVE
+
+-- The current media upload flow uses FILE for Supabase Storage uploads and
+-- YOUTUBE for externally hosted YouTube recordings. Existing legacy values
+-- are normalized before the check constraint is recreated.
+ALTER TABLE public.media_items
+  DROP CONSTRAINT IF EXISTS media_items_source_type_check;
+
+UPDATE public.media_items
+SET source_type = CASE
+  WHEN LOWER(COALESCE(source_type, '')) IN (
+    'youtube', 'youtube_link', 'youtube-url', 'youtube_url', 'link', 'external', 'url'
+  ) THEN 'YOUTUBE'
+  ELSE 'FILE'
+END;
+
+ALTER TABLE public.media_items
+  ADD CONSTRAINT media_items_source_type_check
+  CHECK (source_type IN ('FILE', 'YOUTUBE'));
 
 ALTER TABLE public.media_items ENABLE ROW LEVEL SECURITY;
 

@@ -569,8 +569,8 @@ export default function FellowshipMediaPage() {
       )}
 
       {showUpload && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
-          <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+        <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-slate-950/50 p-4 pt-6 sm:pt-8">
+          <div className="w-full max-w-xl max-h-[calc(100dvh-3rem)] overflow-y-auto rounded-2xl bg-white shadow-2xl sm:max-h-[calc(100dvh-4rem)]">
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Upload Media / Flyer</h2>
