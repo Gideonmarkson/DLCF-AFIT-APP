@@ -139,14 +139,43 @@ export async function GET() {
       return NextResponse.json({ error: fallback.error.message }, { status: 500 });
     }
 
+    const { data: likedRows, error: fallbackLikesError } = await supabase
+      .from('media_likes')
+      .select('media_id')
+      .eq('user_id', user.id);
+
     return NextResponse.json({
       items: fallback.data ?? [],
+      likedMediaIds:
+        fallbackLikesError && /media_likes.*does not exist|relation .*media_likes.*does not exist/i.test(fallbackLikesError.message)
+          ? []
+          : (likedRows ?? []).map((row) => String(row.media_id)),
       canManage: isAuthorizedRole(profile?.role),
     });
   }
 
+  const { data: likedRows, error: likesError } = await supabase
+    .from('media_likes')
+    .select('media_id')
+    .eq('user_id', user.id);
+
+  if (likesError) {
+    // The media page can still load if this migration has not been applied yet.
+    // Likes become persistent as soon as the media_likes migration is run.
+    if (/media_likes.*does not exist|relation .*media_likes.*does not exist/i.test(likesError.message)) {
+      return NextResponse.json({
+        items: data ?? [],
+        likedMediaIds: [],
+        canManage: isAuthorizedRole(profile?.role),
+      });
+    }
+
+    return NextResponse.json({ error: likesError.message }, { status: 500 });
+  }
+
   return NextResponse.json({
     items: data ?? [],
+    likedMediaIds: (likedRows ?? []).map((row) => String(row.media_id)),
     canManage: isAuthorizedRole(profile?.role),
   });
 }

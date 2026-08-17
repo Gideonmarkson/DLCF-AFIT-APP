@@ -156,6 +156,11 @@ export default function FellowshipMediaPage() {
       if (!response.ok) throw new Error(result.error || 'Unable to load fellowship media.');
       setItems(Array.isArray(result.items) ? result.items : []);
       setCanManage(Boolean(result.canManage));
+      setLikedIds(new Set(
+        Array.isArray(result.likedMediaIds)
+          ? result.likedMediaIds.map((id: unknown) => String(id))
+          : []
+      ));
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Unable to load fellowship media.');
       setItems([]);
@@ -284,13 +289,36 @@ export default function FellowshipMediaPage() {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const toggleLike = (id: string) => {
+  const toggleLike = async (id: string) => {
+    const wasLiked = likedIds.has(id);
+
+    // Optimistic UI so the button responds immediately. If the server call
+    // fails, restore the previous state.
     setLikedIds((current) => {
       const next = new Set(current);
-      if (next.has(id)) next.delete(id);
+      if (wasLiked) next.delete(id);
       else next.add(id);
       return next;
     });
+
+    try {
+      const response = await fetch(`/api/fellowship/media/${encodeURIComponent(id)}/like`, {
+        method: wasLiked ? 'DELETE' : 'POST',
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Unable to update media like.');
+      }
+    } catch (likeError) {
+      setLikedIds((current) => {
+        const next = new Set(current);
+        if (wasLiked) next.add(id);
+        else next.delete(id);
+        return next;
+      });
+      setError(likeError instanceof Error ? likeError.message : 'Unable to update media like.');
+    }
   };
 
   return (
@@ -521,7 +549,7 @@ export default function FellowshipMediaPage() {
 
                     <button
                       type="button"
-                      onClick={() => toggleLike(id)}
+                      onClick={() => void toggleLike(id)}
                       className={"inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition " + (liked ? 'border-rose-200 bg-rose-50 text-rose-600' : 'border-slate-200 text-slate-600 hover:bg-slate-50') + ""}
                       aria-pressed={liked}
                       aria-label={liked ? `Remove like from ${titleValue}` : `Like ${titleValue}`}
