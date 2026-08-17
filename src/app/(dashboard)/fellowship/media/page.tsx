@@ -1,779 +1,662 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import Image from 'next/image';
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from 'react';
 import {
-  Film,
-  Headphones,
-  FileImage,
-  Upload,
-  Download,
-  Play,
-  Pause,
-  Search,
-  User,
-  Filter,
   ExternalLink,
+  FileAudio,
+  FileImage,
+  FileVideo,
+  Loader2,
+  Play,
+  Search,
+  Trash2,
+  Upload,
+  X,
 } from 'lucide-react';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
-import { useRole } from '@/context/RoleContext';
-import { createClient } from '@/lib/supabase/client';
 
-type MediaCategory = 'FLYER' | 'SERMON_AUDIO' | 'SPECIAL_VIDEO';
-type SourceType = 'UPLOAD' | 'YOUTUBE';
+type MediaCategory = 'ALL' | 'FLYER' | 'SERMON_AUDIO' | 'SPECIAL_VIDEO';
+type UploadCategory = Exclude<MediaCategory, 'ALL'>;
+type SourceType = 'FILE' | 'YOUTUBE';
+type MediaRow = Record<string, unknown>;
 
-interface MediaItem {
-  id: string;
-  title: string;
-  category: MediaCategory;
-  speakerOrUnit: string;
-  createdAt: string;
-  description: string;
-  mediaUrl: string;
-  thumbnailUrl: string;
-  sourceType: SourceType;
-  downloadsCount: number;
+const CANDIDATES = {
+  title: ['title', 'media_title', 'name'],
+  category: ['category', 'media_category', 'media_type', 'type'],
+  speaker: ['speaker_or_unit', 'speaker', 'speaker_name', 'author'],
+  description: ['description', 'details', 'summary'],
+  url: ['media_url', 'file_url', 'url', 'source_url', 'youtube_url', 'youtube_link', 'link'],
+  source: ['source_type', 'source', 'media_source'],
+  createdAt: ['created_at', 'uploaded_at', 'created_on', 'date'],
+  downloads: ['download_count', 'downloads'],
+} as const;
+
+function getString(row: MediaRow, keys: readonly string[], fallback = '') {
+  for (const key of keys) {
+    const value = row[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return fallback;
 }
 
-const FALLBACK_THUMBNAIL = '/sermon_thumb.jpg';
-
-function formatFileSize(bytes?: number) {
-  if (!bytes) return '';
-  const mb = bytes / (1024 * 1024);
-  return `${mb.toFixed(1)} MB`;
+function getNumber(row: MediaRow, keys: readonly string[], fallback = 0) {
+  for (const key of keys) {
+    const value = row[key];
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string' && value.trim() && Number.isFinite(Number(value))) {
+      return Number(value);
+    }
+  }
+  return fallback;
 }
 
-function guessExtension(url: string) {
+function normalizeCategory(row: MediaRow): UploadCategory {
+  const value = getString(row, CANDIDATES.category).toUpperCase();
+  if (value === 'FLYER') return 'FLYER';
+  if (value === 'SERMON_AUDIO' || value === 'SERMON AUDIO' || value === 'AUDIO') return 'SERMON_AUDIO';
+  return 'SPECIAL_VIDEO';
+}
+
+function isYouTubeUrl(value: string) {
   try {
-    const pathname = new URL(url).pathname;
-    const match = pathname.match(/\.([a-zA-Z0-9]+)$/);
-    return match ? `.${match[1]}` : '';
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    return (
+      host === 'youtube.com' ||
+      host === 'www.youtube.com' ||
+      host === 'm.youtube.com' ||
+      host === 'youtu.be' ||
+      host === 'www.youtu.be'
+    );
   } catch {
-    return '';
+    return false;
   }
 }
 
-function isVideo(item: MediaItem) {
-  return item.category === 'SPECIAL_VIDEO';
+function youtubeId(value: string) {
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+
+    if (host === 'youtu.be' || host === 'www.youtu.be') {
+      return url.pathname.replace(/^\//, '').split('/')[0] || null;
+    }
+
+    const watchId = url.searchParams.get('v');
+    if (watchId) return watchId;
+
+    const parts = url.pathname.split('/').filter(Boolean);
+    if (parts[0] === 'shorts' || parts[0] === 'embed') return parts[1] ?? null;
+  } catch {
+    return null;
+  }
+
+  return null;
 }
 
-export default function MediaRepositoryPage() {
-  const { userRole } = useRole();
-  const isAdmin = userRole === 'SYSTEM_ADMINISTRATOR';
-  const isMediaOrSecretarialStaff =
-    userRole === 'ASSOCIATE_COORDINATOR' || userRole === 'STUDENT_EXECUTIVE';
-  const canUploadMedia = isAdmin || isMediaOrSecretarialStaff;
+function youtubeThumbnail(value: string) {
+  const id = youtubeId(value);
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : '/sermon_thumb.jpg';
+}
 
-  const supabase = useMemo(() => createClient(), []);
+function categoryLabel(category: UploadCategory) {
+  if (category === 'FLYER') return 'FLYER';
+  if (category === 'SERMON_AUDIO') return 'SERMON AUDIO';
+  return 'SPECIAL VIDEO';
+}
 
-  const [items, setItems] = useState<MediaItem[]>([]);
+function categoryIcon(category: UploadCategory) {
+  if (category === 'FLYER') return FileImage;
+  if (category === 'SERMON_AUDIO') return FileAudio;
+  return FileVideo;
+}
+
+function formatDate(row: MediaRow) {
+  const value = getString(row, CANDIDATES.createdAt);
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+
+
+export default function FellowshipMediaPage() {
+  const [items, setItems] = useState<MediaRow[]>([]);
+  const [canManage, setCanManage] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('ALL');
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<MediaCategory>('ALL');
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showUpload, setShowUpload] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newCategory, setNewCategory] =
-    useState<MediaCategory>('SERMON_AUDIO');
-  const [newSpeaker, setNewSpeaker] = useState('');
-  const [newDescription, setNewDescription] = useState('');
-  const [sourceType, setSourceType] = useState<SourceType>('UPLOAD');
+  const [uploadCategory, setUploadCategory] = useState<UploadCategory>('SPECIAL_VIDEO');
+  const [sourceType, setSourceType] = useState<SourceType>('FILE');
+  const [title, setTitle] = useState('');
+  const [speaker, setSpeaker] = useState('');
+  const [description, setDescription] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadMedia() {
-      setLoading(true);
-      setError('');
-
-      const { data, error: loadError } = await supabase
-        .from('media_items')
-        .select(
-          'id,title,category,speaker_or_unit,created_at,description,media_url,thumbnail_url,source_type,download_count'
-        )
-        .order('created_at', { ascending: false });
-
-      if (cancelled) return;
-
-      if (loadError) {
-        setError(loadError.message);
-        setItems([]);
-        setLoading(false);
-        return;
-      }
-
-      setItems(
-        (data ?? []).map((row) => ({
-          id: row.id,
-          title: row.title,
-          category: row.category as MediaCategory,
-          speakerOrUnit: row.speaker_or_unit,
-          createdAt: row.created_at,
-          description:
-            row.description || 'Uploaded fellowship media recording.',
-          mediaUrl: row.media_url,
-          thumbnailUrl: row.thumbnail_url || FALLBACK_THUMBNAIL,
-          sourceType: row.source_type as SourceType,
-          downloadsCount: row.download_count ?? 0,
-        }))
-      );
-      setLoading(false);
-    }
-
-    loadMedia();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [supabase]);
-
-  const resetUploadForm = () => {
-    setNewTitle('');
-    setNewSpeaker('');
-    setNewDescription('');
-    setNewCategory('SERMON_AUDIO');
-    setSourceType('UPLOAD');
-    setYoutubeUrl('');
-    setUploadedFile(null);
-  };
-
-  const togglePlay = (item: MediaItem) => {
-    if (item.category === 'FLYER') {
-      window.open(item.mediaUrl, '_blank', 'noopener,noreferrer');
-      return;
-    }
-
-    setPlayingId((current) => (current === item.id ? null : item.id));
-  };
-
-  const handleDownload = async (item: MediaItem) => {
-    // media_items' UPDATE policy only allows a row's own creator to write to
-    // it, so a plain client-side .update() silently failed (no thrown error,
-    // just an RLS-blocked no-op) for every download made by anyone else.
-    // This RPC runs as SECURITY DEFINER so any authenticated user can
-    // atomically bump the counter without touching anything else on the row.
-    const { data: newCount, error: rpcError } = await supabase.rpc(
-      'increment_media_download_count',
-      { p_media_id: item.id }
-    );
-
-    setItems((current) =>
-      current.map((entry) =>
-        entry.id === item.id
-          ? {
-              ...entry,
-              downloadsCount:
-                !rpcError && typeof newCount === 'number'
-                  ? newCount
-                  : entry.downloadsCount + 1,
-            }
-          : entry
-      )
-    );
-
-    if (item.sourceType === 'YOUTUBE') {
-      window.open(item.mediaUrl, '_blank', 'noopener,noreferrer');
-      return;
-    }
-
-    // A plain window.open() on a Supabase Storage URL just navigates to /
-    // renders the file (images and PDFs open inline instead of downloading).
-    // Appending Storage's `download` query param forces
-    // Content-Disposition: attachment so the browser actually saves it.
-    const extension = guessExtension(item.mediaUrl);
-    const safeName =
-      item.title.replace(/[^a-zA-Z0-9._-]/g, '_') || 'download';
-    const downloadUrl = `${item.mediaUrl}${
-      item.mediaUrl.includes('?') ? '&' : '?'
-    }download=${encodeURIComponent(`${safeName}${extension}`)}`;
-
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.rel = 'noopener noreferrer';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  };
-
-  const handleUploadSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const loadMedia = async () => {
+    setLoading(true);
     setError('');
 
-    if (!newTitle || !newSpeaker) return;
-
-    if (sourceType === 'UPLOAD' && !uploadedFile) {
-      setError('Please select a media file to upload.');
-      return;
-    }
-
-    if (sourceType === 'YOUTUBE' && !youtubeUrl.trim()) {
-      setError('Please provide the YouTube URL.');
-      return;
-    }
-
-    setUploading(true);
-
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        setError('Your session has expired. Please sign in again.');
-        return;
-      }
-
-      let mediaUrl = '';
-      let storagePath: string | null = null;
-
-      if (sourceType === 'YOUTUBE') {
-        mediaUrl = youtubeUrl.trim();
-      } else {
-        const safeName = uploadedFile!.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        storagePath = `${user.id}/${Date.now()}-${safeName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('media-files')
-          .upload(storagePath, uploadedFile!, {
-            upsert: false,
-            contentType: uploadedFile!.type || undefined,
-          });
-
-        if (uploadError) {
-          setError(uploadError.message);
-          return;
-        }
-
-        const { data: publicUrlData } = supabase.storage
-          .from('media-files')
-          .getPublicUrl(storagePath);
-
-        mediaUrl = publicUrlData.publicUrl;
-      }
-
-      const { error: insertError } = await supabase.from('media_items').insert({
-        title: newTitle.trim(),
-        category: newCategory,
-        speaker_or_unit: newSpeaker.trim(),
-        description: newDescription.trim() || null,
-        media_url: mediaUrl,
-        thumbnail_url:
-          newCategory === 'FLYER' ? mediaUrl : FALLBACK_THUMBNAIL,
-        source_type: sourceType,
-        storage_path: storagePath,
-        created_by: user.id,
-        download_count: 0,
-      });
-
-      if (insertError) {
-        if (storagePath) {
-          await supabase.storage.from('media-files').remove([storagePath]);
-        }
-        setError(insertError.message);
-        return;
-      }
-
-      const { data: freshItems, error: reloadError } = await supabase
-        .from('media_items')
-        .select(
-          'id,title,category,speaker_or_unit,created_at,description,media_url,thumbnail_url,source_type,download_count'
-        )
-        .order('created_at', { ascending: false });
-
-      if (reloadError) {
-        setError(reloadError.message);
-        return;
-      }
-
-      setItems(
-        (freshItems ?? []).map((row) => ({
-          id: row.id,
-          title: row.title,
-          category: row.category as MediaCategory,
-          speakerOrUnit: row.speaker_or_unit,
-          createdAt: row.created_at,
-          description:
-            row.description || 'Uploaded fellowship media recording.',
-          mediaUrl: row.media_url,
-          thumbnailUrl: row.thumbnail_url || FALLBACK_THUMBNAIL,
-          sourceType: row.source_type as SourceType,
-          downloadsCount: row.download_count ?? 0,
-        }))
-      );
-
-      setUploadSuccess(true);
-      window.setTimeout(() => {
-        setUploadSuccess(false);
-        setShowUploadModal(false);
-        resetUploadForm();
-      }, 1200);
+      const response = await fetch('/api/fellowship/media', { cache: 'no-store' });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Unable to load fellowship media.');
+      setItems(Array.isArray(result.items) ? result.items : []);
+      setCanManage(Boolean(result.canManage));
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Unable to load fellowship media.');
+      setItems([]);
     } finally {
-      setUploading(false);
+      setLoading(false);
     }
   };
 
-  const filteredItems = items.filter((item) => {
-    const search = searchTerm.toLowerCase().trim();
-    const matchesSearch =
-      !search ||
-      item.title.toLowerCase().includes(search) ||
-      item.speakerOrUnit.toLowerCase().includes(search) ||
-      item.description.toLowerCase().includes(search);
+  useEffect(() => {
+    void loadMedia();
+  }, []);
 
-    const matchesCategory =
-      categoryFilter === 'ALL' || item.category === categoryFilter;
+  const filteredItems = useMemo(() => {
+    const query = search.trim().toLowerCase();
 
-    return matchesSearch && matchesCategory;
-  });
+    return [...items]
+      .filter((item) => filter === 'ALL' || normalizeCategory(item) === filter)
+      .filter((item) => {
+        if (!query) return true;
+        const haystack = [
+          getString(item, CANDIDATES.title),
+          getString(item, CANDIDATES.speaker),
+          getString(item, CANDIDATES.description),
+          categoryLabel(normalizeCategory(item)),
+        ]
+          .join(' ')
+          .toLowerCase();
+        return haystack.includes(query);
+      })
+      .sort((a, b) => formatDate(b).localeCompare(formatDate(a)));
+  }, [items, filter, search]);
 
-  const renderMediaControl = (item: MediaItem) => {
-    if (item.category === 'FLYER') {
-      return (
-        <button
-          onClick={() => togglePlay(item)}
-          className="w-12 h-12 rounded-full bg-[#1D4ED8] text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-          aria-label={`Open ${item.title}`}
-        >
-          <FileImage className="w-6 h-6" />
-        </button>
-      );
+  const resetUploadForm = () => {
+    setUploadCategory('SPECIAL_VIDEO');
+    setSourceType('FILE');
+    setTitle('');
+    setSpeaker('');
+    setDescription('');
+    setYoutubeUrl('');
+    setSelectedFile(null);
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setSelectedFile(event.target.files?.[0] ?? null);
+  };
+
+  const handleUploadSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSaving(true);
+    setError('');
+
+    try {
+      if (!title.trim() || !speaker.trim()) {
+        throw new Error('Media title and speaker/unit are required.');
+      }
+
+      if (sourceType === 'YOUTUBE') {
+        if (uploadCategory === 'FLYER' || !isYouTubeUrl(youtubeUrl)) {
+          throw new Error('Please enter a valid YouTube URL for the recording.');
+        }
+      } else if (!selectedFile) {
+        throw new Error('Please choose a file to upload.');
+      }
+
+      const formData = new FormData();
+      formData.set('category', uploadCategory);
+      formData.set('sourceType', sourceType);
+      formData.set('title', title.trim());
+      formData.set('speaker', speaker.trim());
+      formData.set('description', description.trim());
+
+      if (sourceType === 'YOUTUBE') {
+        formData.set('youtubeUrl', youtubeUrl.trim());
+      } else if (selectedFile) {
+        formData.set('file', selectedFile);
+      }
+
+      const response = await fetch('/api/fellowship/media', {
+        method: 'POST',
+        body: formData,
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Media upload failed.');
+      }
+
+      resetUploadForm();
+      setShowUpload(false);
+      await loadMedia();
+    } catch (uploadError) {
+      setError(uploadError instanceof Error ? uploadError.message : 'Media upload failed.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    const item = items.find((entry) => String(entry.id ?? '') === id);
+    const itemTitle = item ? getString(item, CANDIDATES.title, 'this media') : 'this media';
+
+    if (!window.confirm(`Delete “${itemTitle}” from the fellowship media repository? This action is permanent.`)) {
+      return;
     }
 
-    if (item.sourceType === 'YOUTUBE') {
-      return (
-        <button
-          onClick={() => togglePlay(item)}
-          className="w-12 h-12 rounded-full bg-[#1D4ED8] text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-          aria-label={`Open ${item.title}`}
-        >
-          {playingId === item.id ? (
-            <Pause className="w-6 h-6" />
-          ) : (
-            <Play className="w-6 h-6 ml-0.5" />
-          )}
-        </button>
-      );
-    }
+    setDeletingId(id);
+    setError('');
 
-    return (
-      <button
-        onClick={() => togglePlay(item)}
-        className="w-12 h-12 rounded-full bg-[#1D4ED8] text-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-        aria-label={`${playingId === item.id ? 'Pause' : 'Play'} ${item.title}`}
-      >
-        {playingId === item.id ? (
-          <Pause className="w-6 h-6" />
-        ) : (
-          <Play className="w-6 h-6 ml-0.5" />
-        )}
-      </button>
-    );
+    try {
+      const response = await fetch(`/api/fellowship/media/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Media deletion failed.');
+
+      if (playingId === id) setPlayingId(null);
+      setItems((current) => current.filter((entry) => String(entry.id ?? '') !== id));
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Media deletion failed.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const openExternal = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
-    <div className="space-y-6 font-sans">
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-white via-[#EFF6FF] to-white border border-[#E2E8F0] shadow-xs space-y-2">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-[#1D4ED8] text-white flex items-center justify-center font-extrabold shadow-sm flex-shrink-0">
-              <Film className="w-6 h-6 stroke-[1.75px]" />
-            </div>
-            <div>
-              <h1 className="text-xl font-extrabold text-[#1F2937] tracking-tight">
-                Fellowship Media &amp; Special Service Recordings
-              </h1>
-              <p className="text-xs text-[#6B7280] font-medium mt-0.5">
-                Stream sermon recordings and access official fellowship media.
-              </p>
-            </div>
+    <div className="space-y-5 pb-10">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">Fellowship Media</h1>
+            <p className="mt-1 max-w-2xl text-sm text-slate-500">
+              A central repository for fellowship flyers, sermon audio and special-service recordings.
+            </p>
           </div>
 
-          {canUploadMedia && (
-            <Button
-              onClick={() => setShowUploadModal(true)}
-              variant="primary"
-              className="gap-2 shrink-0 rounded-xl font-bold text-xs"
+          {canManage && (
+            <button
+              type="button"
+              onClick={() => setShowUpload(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-800"
             >
-              <Upload className="w-4 h-4" />
+              <Upload className="h-4 w-4" />
               Upload Media / Flyer
-            </Button>
+            </button>
           )}
         </div>
-      </div>
+      </section>
 
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#9CA3AF]" />
-          <Input
-            placeholder="Search sermons, flyers, speakers..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 text-xs"
+      <section className="grid gap-3 md:grid-cols-[1fr_220px]">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search media by title, speaker or description..."
+            className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />
         </div>
-
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Filter className="w-4 h-4 text-[#6B7280]" />
-          <Select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="text-xs font-semibold"
-          >
-            <option value="ALL">All Media Types ({items.length})</option>
-            <option value="SERMON_AUDIO">Audio Sermons &amp; Messages</option>
-            <option value="FLYER">Program Flyers &amp; Posters</option>
-            <option value="SPECIAL_VIDEO">Video Special Service Recordings</option>
-          </Select>
-        </div>
-      </div>
+        <select
+          value={filter}
+          onChange={(event) => setFilter(event.target.value as MediaCategory)}
+          className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+        >
+          <option value="ALL">All Media Types</option>
+          <option value="FLYER">Flyers</option>
+          <option value="SERMON_AUDIO">Sermon Audio</option>
+          <option value="SPECIAL_VIDEO">Special Videos</option>
+        </select>
+      </section>
 
       {error && (
-        <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs font-bold text-red-700">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {loading ? (
-          <div className="md:col-span-2 p-8 rounded-3xl bg-white border border-[#E2E8F0] text-center text-xs text-[#6B7280]">
+      {loading ? (
+        <div className="flex min-h-60 items-center justify-center rounded-2xl border border-slate-200 bg-white">
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <Loader2 className="h-4 w-4 animate-spin" />
             Loading fellowship media...
           </div>
-        ) : filteredItems.length === 0 ? (
-          <div className="md:col-span-2 p-8 rounded-3xl bg-[#F8FAFC] border border-dashed border-[#E2E8F0] text-center text-xs text-[#6B7280]">
-            No media has been published yet.
-          </div>
-        ) : (
-          filteredItems.map((item) => (
-            <Card
-              key={item.id}
-              className="border-[#E2E8F0] bg-white shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between"
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <Badge
-                    variant={
-                      item.category === 'SERMON_AUDIO'
-                        ? 'blue'
-                        : item.category === 'FLYER'
-                          ? 'gold'
-                          : 'slate'
-                    }
-                    className="gap-1 text-[10px]"
-                  >
-                    {item.category === 'SERMON_AUDIO' && (
-                      <Headphones className="w-3 h-3" />
-                    )}
-                    {item.category === 'FLYER' && (
-                      <FileImage className="w-3 h-3" />
-                    )}
-                    {item.category === 'SPECIAL_VIDEO' && (
-                      <Film className="w-3 h-3" />
-                    )}
-                    {item.category.replace('_', ' ')}
-                  </Badge>
-                  <span className="text-[11px] font-mono text-[#6B7280] font-semibold">
-                    {new Date(item.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
+        </div>
+      ) : filteredItems.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
+          <p className="text-sm font-semibold text-slate-700">No media found</p>
+          <p className="mt-1 text-sm text-slate-500">Try another search or media category.</p>
+        </div>
+      ) : (
+        <div className="grid gap-5 xl:grid-cols-2">
+          {filteredItems.map((item) => {
+            const id = String(item.id ?? getString(item, CANDIDATES.title, 'media-item'));
+            const category = normalizeCategory(item);
+            const Icon = categoryIcon(category);
+            const titleValue = getString(item, CANDIDATES.title, 'Untitled media');
+            const speakerValue = getString(item, CANDIDATES.speaker, 'Fellowship Media');
+            const descriptionValue = getString(item, CANDIDATES.description);
+            const mediaUrl = getString(item, CANDIDATES.url);
+            const youtube = isYouTubeUrl(mediaUrl);
+            const playing = playingId === id;
+            const dateValue = formatDate(item);
+            const downloads = getNumber(item, CANDIDATES.downloads);
+            const thumbnail = youtube
+              ? youtubeThumbnail(mediaUrl)
+              : getString(item, ['thumbnail_url', 'thumbnail', 'poster_url'], '/sermon_thumb.jpg');
 
-                <CardTitle className="text-sm font-extrabold text-[#1F2937] leading-tight">
-                  {item.title}
-                </CardTitle>
-
-                <CardDescription className="text-xs font-bold text-[#1D4ED8] mt-1 flex items-center gap-1">
-                  <User className="w-3.5 h-3.5" />
-                  {item.speakerOrUnit}
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent className="space-y-4">
-                <div
-                  className={`relative w-full rounded-2xl overflow-hidden border border-[#E2E8F0] bg-[#F8FAFC] ${
-                    item.category === 'FLYER' ? 'h-80' : 'h-44'
-                  }`}
-                >
-                  <Image
-                    src={
-                      item.category === 'FLYER'
-                        ? item.mediaUrl || FALLBACK_THUMBNAIL
-                        : item.thumbnailUrl || FALLBACK_THUMBNAIL
-                    }
-                    alt={item.title}
-                    fill
-                    className={
-                      item.category === 'FLYER' ? 'object-contain' : 'object-cover'
-                    }
-                  />
-                  <div className="absolute inset-0 bg-[#1F2937]/30 flex items-center justify-center">
-                    {renderMediaControl(item)}
+            return (
+              <article key={id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="border-b border-slate-100 px-4 py-4 sm:px-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 text-[11px] font-bold tracking-wide text-blue-700">
+                        <Icon className="h-3.5 w-3.5" />
+                        {categoryLabel(category)}
+                      </div>
+                      <h2 className="mt-2 truncate text-lg font-bold text-slate-900">{titleValue}</h2>
+                      <p className="mt-1 text-sm text-slate-600">{speakerValue}</p>
+                    </div>
+                    {dateValue && <span className="shrink-0 text-xs text-slate-400">{dateValue}</span>}
                   </div>
                 </div>
 
-                {playingId === item.id && item.sourceType === 'YOUTUBE' && (
-                  <div className="p-3 rounded-xl bg-[#EFF6FF] border border-[#1D4ED8]/30">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        window.open(
-                          item.mediaUrl,
-                          '_blank',
-                          'noopener,noreferrer'
-                        )
-                      }
-                      className="text-xs gap-1 border-[#1D4ED8] text-[#1D4ED8]"
-                    >
-                      Open YouTube Recording
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                )}
+                <div className="relative aspect-video overflow-hidden bg-slate-900">
+                  {playing && category === 'SPECIAL_VIDEO' && !youtube ? (
+                    <>
+                      <video
+                        key={`${id}-video`}
+                        src={mediaUrl}
+                        controls
+                        autoPlay
+                        playsInline
+                        className="absolute inset-0 h-full w-full bg-black object-contain"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setPlayingId(null)}
+                        className="absolute right-3 top-3 z-10 rounded-full bg-black/70 p-2 text-white shadow-lg transition hover:bg-black"
+                        aria-label="Close video player"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </>
+                  ) : playing && category === 'SERMON_AUDIO' && !youtube ? (
+                    <div className="flex h-full items-center justify-center bg-slate-900 px-6">
+                      <audio src={mediaUrl} controls autoPlay className="w-full" />
+                      <button
+                        type="button"
+                        onClick={() => setPlayingId(null)}
+                        className="absolute right-3 top-3 rounded-full bg-black/70 p-2 text-white shadow-lg transition hover:bg-black"
+                        aria-label="Close audio player"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <img
+                        src={thumbnail}
+                        alt=""
+                        className="absolute inset-0 h-full w-full object-cover"
+                        onError={(event) => {
+                          event.currentTarget.src = '/sermon_thumb.jpg';
+                        }}
+                      />
 
-                {playingId === item.id &&
-                  item.sourceType === 'UPLOAD' &&
-                  item.category === 'SERMON_AUDIO' && (
-                    <audio
-                      controls
-                      autoPlay
-                      src={item.mediaUrl}
-                      className="w-full"
-                    />
+                      {youtube && (
+                        <button
+                          type="button"
+                          onClick={() => openExternal(mediaUrl)}
+                          className="absolute inset-0 z-10 cursor-pointer bg-transparent"
+                          aria-label={`Open ${titleValue} on YouTube`}
+                        />
+                      )}
+
+                      {category === 'SPECIAL_VIDEO' && !youtube && (
+                        <button
+                          type="button"
+                          onClick={() => setPlayingId(id)}
+                          className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-blue-700 text-white shadow-xl transition hover:scale-105 hover:bg-blue-800"
+                          aria-label={`Play ${titleValue}`}
+                        >
+                          <Play className="ml-0.5 h-6 w-6 fill-current" />
+                        </button>
+                      )}
+
+                      {category === 'SERMON_AUDIO' && !youtube && (
+                        <button
+                          type="button"
+                          onClick={() => setPlayingId(id)}
+                          className="absolute left-1/2 top-1/2 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-blue-700 text-white shadow-xl transition hover:scale-105 hover:bg-blue-800"
+                          aria-label={`Play ${titleValue}`}
+                        >
+                          <Play className="ml-0.5 h-6 w-6 fill-current" />
+                        </button>
+                      )}
+                    </>
                   )}
-
-                {playingId === item.id &&
-                  item.sourceType === 'UPLOAD' &&
-                  item.category === 'SPECIAL_VIDEO' && (
-                    <video
-                      controls
-                      autoPlay
-                      src={item.mediaUrl}
-                      className="w-full rounded-xl"
-                    />
-                  )}
-
-                <p className="text-xs text-[#4B5563] leading-relaxed font-medium">
-                  {item.description}
-                </p>
-
-                <div className="flex items-center justify-between pt-2 border-t border-[#E2E8F0] text-xs">
-                  <span className="text-[11px] text-[#6B7280] font-mono font-semibold">
-                    {item.sourceType === 'YOUTUBE' ? 'YouTube' : 'Stored media'} •{' '}
-                    {item.downloadsCount} Downloads
-                  </span>
-
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDownload(item)}
-                    className="text-xs gap-1 border-[#1D4ED8] text-[#1D4ED8] hover:bg-[#EFF6FF] font-bold"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    Open / Download
-                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
 
-      {showUploadModal && canUploadMedia && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1F2937]/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-lg max-h-[calc(100vh-2rem)] overflow-y-auto rounded-3xl border border-[#E2E8F0] bg-white p-6 shadow-2xl space-y-4 font-sans">
-            <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
-              <div className="flex items-center gap-2">
-                <Upload className="w-5 h-5 text-[#1D4ED8]" />
-                <h3 className="text-base font-extrabold text-[#1F2937]">
-                  Publish Fellowship Media
-                </h3>
+                <div className="space-y-4 px-4 py-4 sm:px-5">
+                  {descriptionValue && <p className="text-sm leading-6 text-slate-600">{descriptionValue}</p>}
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {category === 'FLYER' && mediaUrl && (
+                      <button
+                        type="button"
+                        onClick={() => openExternal(mediaUrl)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        View Flyer
+                      </button>
+                    )}
+
+                    {category !== 'FLYER' && youtube && (
+                      <button
+                        type="button"
+                        onClick={() => openExternal(mediaUrl)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-50"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Watch on YouTube
+                      </button>
+                    )}
+
+                    {category !== 'FLYER' && !youtube && mediaUrl && (
+                      <a
+                        href={mediaUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Open Media
+                      </a>
+                    )}
+
+                    <span className="ml-auto text-xs text-slate-400">{downloads} download{downloads === 1 ? '' : 's'}</span>
+
+                    {canManage && (
+                      <button
+                        type="button"
+                        disabled={deletingId === id}
+                        onClick={() => void handleDelete(id)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {deletingId === id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )}
+                        {deletingId === id ? 'Deleting...' : 'Delete'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {showUpload && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Upload Media / Flyer</h2>
+                <p className="mt-0.5 text-xs text-slate-500">Publish a fellowship resource to the media repository.</p>
               </div>
               <button
-                onClick={() => setShowUploadModal(false)}
-                className="text-[#9CA3AF] hover:text-[#1F2937]"
-                aria-label="Close"
+                type="button"
+                onClick={() => {
+                  setShowUpload(false);
+                  resetUploadForm();
+                }}
+                className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                aria-label="Close upload modal"
               >
-                ✕
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            <form onSubmit={handleUploadSubmit} className="space-y-3">
+            <form onSubmit={handleUploadSubmit} className="space-y-4 p-5">
               <div>
-                <label className="block text-xs font-extrabold text-[#1F2937] mb-1">
-                  Media Category
-                </label>
-                <Select
-                  value={newCategory}
-                  onChange={(e) =>
-                    setNewCategory(e.target.value as MediaCategory)
-                  }
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700">Media Category</label>
+                <select
+                  value={uploadCategory}
+                  onChange={(event) => {
+                    const next = event.target.value as UploadCategory;
+                    setUploadCategory(next);
+                    if (next === 'FLYER') setSourceType('FILE');
+                  }}
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 >
-                  <option value="SERMON_AUDIO">
-                    Audio Sermon / Recording (MP3)
-                  </option>
-                  <option value="FLYER">
-                    Program Flyer / Announcement Poster
-                  </option>
-                  <option value="SPECIAL_VIDEO">
-                    Video Special Service Recording (MP4)
-                  </option>
-                </Select>
+                  <option value="SPECIAL_VIDEO">Special Service Video Recording</option>
+                  <option value="SERMON_AUDIO">Sermon Audio / Recording</option>
+                  <option value="FLYER">Program Flyer / Announcement Poster</option>
+                </select>
               </div>
 
-              {newCategory === 'SERMON_AUDIO' && (
+              {uploadCategory !== 'FLYER' && (
                 <div>
-                  <label className="block text-xs font-extrabold text-[#1F2937] mb-1">
-                    Source
-                  </label>
-                  <Select
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Media Source</label>
+                  <select
                     value={sourceType}
-                    onChange={(e) =>
-                      setSourceType(e.target.value as SourceType)
-                    }
+                    onChange={(event) => setSourceType(event.target.value as SourceType)}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   >
-                    <option value="UPLOAD">Upload audio to fellowship storage</option>
-                    <option value="YOUTUBE">Use a YouTube recording link</option>
-                  </Select>
+                    <option value="FILE">Upload a file</option>
+                    <option value="YOUTUBE">Use a YouTube link</option>
+                  </select>
                 </div>
               )}
 
               <div>
-                <label className="block text-xs font-extrabold text-[#1F2937] mb-1">
-                  Media Title
-                </label>
-                <Input
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700">Media Title</label>
+                <input
+                  value={title}
+                  onChange={(event) => setTitle(event.target.value)}
                   placeholder="e.g. AFIT Fellowship Service Message"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  className="text-xs"
                   required
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-extrabold text-[#1F2937] mb-1">
-                  Speaker / Unit Lead
-                </label>
-                <Input
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700">Speaker / Unit Lead</label>
+                <input
+                  value={speaker}
+                  onChange={(event) => setSpeaker(event.target.value)}
                   placeholder="e.g. Pastor / Bro. Samuel Okosun or Media Unit"
-                  value={newSpeaker}
-                  onChange={(e) => setNewSpeaker(e.target.value)}
-                  className="text-xs"
                   required
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-extrabold text-[#1F2937] mb-1">
-                  Brief Description
-                </label>
+                <label className="mb-1.5 block text-sm font-semibold text-slate-700">Brief Description</label>
                 <textarea
-                  rows={2}
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                  rows={3}
                   placeholder="Add details about the sermon, event theme, or service notes..."
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  className="w-full rounded-xl border border-[#E2E8F0] bg-white p-3 text-xs text-[#1F2937] focus:border-[#1D4ED8] focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/20"
+                  className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                 />
               </div>
 
-              {sourceType === 'YOUTUBE' ? (
+              {sourceType === 'YOUTUBE' && uploadCategory !== 'FLYER' ? (
                 <div>
-                  <label className="block text-xs font-extrabold text-[#1F2937] mb-1">
-                    YouTube URL
-                  </label>
-                  <Input
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">YouTube Link</label>
+                  <input
                     type="url"
-                    placeholder="https://www.youtube.com/watch?v=..."
                     value={youtubeUrl}
-                    onChange={(e) => setYoutubeUrl(e.target.value)}
-                    className="text-xs"
+                    onChange={(event) => setYoutubeUrl(event.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=..."
                     required
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
               ) : (
                 <div>
-                  <label className="block text-xs font-extrabold text-[#1F2937] mb-1">
-                    Select File to Upload
-                  </label>
-                  <div className="relative border-2 border-dashed border-[#CBD5E1] hover:border-[#1D4ED8] rounded-xl p-4 text-center cursor-pointer bg-[#F8FAFC]">
-                    <input
-                      type="file"
-                      accept={
-                        newCategory === 'SERMON_AUDIO'
-                          ? '.mp3,.wav,.m4a'
-                          : newCategory === 'SPECIAL_VIDEO'
-                            ? '.mp4,.webm,.mov'
-                            : '.png,.jpg,.jpeg,.pdf'
-                      }
-                      onChange={(e) =>
-                        e.target.files?.[0] &&
-                        setUploadedFile(e.target.files[0])
-                      }
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                    />
-                    <div className="flex flex-col items-center justify-center space-y-1">
-                      <Upload className="w-6 h-6 text-[#1D4ED8]" />
-                      <div className="text-xs font-extrabold text-[#1F2937]">
-                        {uploadedFile
-                          ? uploadedFile.name
-                          : 'Click to choose a file'}
-                      </div>
-                      <div className="text-[10px] text-[#6B7280]">
-                        {uploadedFile
-                          ? formatFileSize(uploadedFile.size)
-                          : 'Stored securely in Supabase Storage'}
-                      </div>
-                    </div>
-                  </div>
+                  <label className="mb-1.5 block text-sm font-semibold text-slate-700">Select File to Upload</label>
+                  <input
+                    type="file"
+                    onChange={handleFileChange}
+                    required
+                    accept={
+                      uploadCategory === 'FLYER'
+                        ? 'image/*'
+                        : uploadCategory === 'SERMON_AUDIO'
+                          ? 'audio/*'
+                          : 'video/*'
+                    }
+                    className="block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                  />
+                  <p className="mt-1.5 text-xs text-slate-400">Stored in the existing Supabase media-files bucket.</p>
                 </div>
               )}
 
-              {uploadSuccess && (
-                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800">
-                  Media published successfully.
-                </div>
-              )}
-
-              {error && (
-                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs font-bold text-red-700">
-                  {error}
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <Button
+              <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
+                <button
                   type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowUploadModal(false)}
+                  onClick={() => {
+                    setShowUpload(false);
+                    resetUploadForm();
+                  }}
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
                 >
                   Cancel
-                </Button>
-                <Button
+                </button>
+                <button
                   type="submit"
-                  variant="primary"
-                  size="sm"
-                  className="gap-1.5"
-                  disabled={uploading}
+                  disabled={saving}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <Upload className="w-3.5 h-3.5" />
-                  {uploading ? 'Publishing...' : 'Publish to Repository'}
-                </Button>
+                  {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {saving ? 'Publishing...' : 'Publish to Repository'}
+                </button>
               </div>
             </form>
           </div>
