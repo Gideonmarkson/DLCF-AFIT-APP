@@ -12,6 +12,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Badge } from '@/components/ui/badge';
 import { DLCF_EXCO_PORTFOLIOS } from '@/lib/constants';
 import { DepartmentSelect } from '@/components/shared/DepartmentSelect';
+import { PortfolioMultiSelect } from '@/components/shared/PortfolioMultiSelect';
 
 export default function ExcoRegistrationPage() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function ExcoRegistrationPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [excoOffice, setExcoOffice] = useState('General Coordinator');
+  const [additionalOffices, setAdditionalOffices] = useState<string[]>([]);
   const [tenureSession, setTenureSession] = useState('2025/2026');
   const [department, setDepartment] = useState('B.Eng Aerospace Engineering');
   const [level, setLevel] = useState('400');
@@ -52,6 +54,7 @@ export default function ExcoRegistrationPage() {
           level,
           cgpa,
           excoOffice,
+          additionalOffices,
           tenureSession,
         }),
       });
@@ -115,13 +118,28 @@ export default function ExcoRegistrationPage() {
             {/* Executive Office Selection */}
             <div className="space-y-1">
               <label className="block text-xs font-extrabold text-[#1F2937]">Executive Office / Portfolio</label>
-              <Select value={excoOffice} onChange={(e) => setExcoOffice(e.target.value)} className="text-xs font-bold text-[#1D4ED8]">
+              <Select
+                value={excoOffice}
+                onChange={(e) => {
+                  setExcoOffice(e.target.value);
+                  setAdditionalOffices((prev) => prev.filter((o) => o !== e.target.value));
+                }}
+                className="text-xs font-bold text-[#1D4ED8]"
+              >
                 {DLCF_EXCO_PORTFOLIOS.map((office) => (
                   <option key={office} value={office}>
                     {office}
                   </option>
                 ))}
               </Select>
+            </div>
+
+            {/* Additional Portfolios — some Excos hold more than one office */}
+            <div className="space-y-1">
+              <label className="block text-xs font-extrabold text-[#1F2937]">
+                Additional Portfolios <span className="font-semibold text-[#6B7280]">(optional — select any other roles also held)</span>
+              </label>
+              <PortfolioMultiSelect primaryOffice={excoOffice} selected={additionalOffices} onChange={setAdditionalOffices} />
             </div>
 
             {/* Tenure / Academic Session */}

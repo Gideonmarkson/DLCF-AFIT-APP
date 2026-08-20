@@ -147,8 +147,8 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2">
                     <h1 className="text-xl font-extrabold text-[#1F2937] tracking-tight">
                       Student Executive Portal
-                      {profile.executiveOffice
-                        ? ` (${profile.executiveOffice})`
+                      {[profile.executiveOffice, ...profile.additionalOffices].filter(Boolean).length > 0
+                        ? ` (${[profile.executiveOffice, ...profile.additionalOffices].filter(Boolean).join(' & ')})`
                         : ''}
                     </h1>
                   </div>

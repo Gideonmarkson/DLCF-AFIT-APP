@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { MentorAssignModal } from './MentorAssignModal';
 import { createClient } from '@/lib/supabase/client';
 import { AFIT_DEPARTMENTS } from '@/lib/constants';
+import { holdsOffice } from '@/lib/utils';
 import { useRole } from '@/context/RoleContext';
 
 export interface FlaggedStudent {
@@ -27,7 +28,7 @@ const OTHER_DEPARTMENT_VALUE = 'OTHER';
 
 export function InterventionTable() {
   const { profile } = useRole();
-  const canAssignMentors = profile.executiveOffice === 'Academic Director';
+  const canAssignMentors = holdsOffice(profile.executiveOffice, profile.additionalOffices, 'Academic Director');
 
   const [departmentFilter, setDepartmentFilter] = useState('ALL');
   const [customDepartment, setCustomDepartment] = useState('');

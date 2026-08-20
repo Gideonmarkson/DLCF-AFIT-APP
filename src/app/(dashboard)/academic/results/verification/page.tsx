@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useRole } from '@/context/RoleContext';
+import { holdsOffice } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 
 interface ResultRecord {
@@ -26,8 +27,7 @@ interface ResultRecord {
 
 export default function ResultVerificationPage() {
   const { profile } = useRole();
-  const isAcademicDirector =
-    profile.executiveOffice === 'Academic Director';
+  const isAcademicDirector = holdsOffice(profile.executiveOffice, profile.additionalOffices, 'Academic Director');
   const supabase = useMemo(() => createClient(), []);
 
   const [results, setResults] = useState<ResultRecord[]>([]);

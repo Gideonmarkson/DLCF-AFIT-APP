@@ -21,7 +21,12 @@ export async function POST(req: NextRequest) {
     }
 
     const payload = (await req.json()) as Record<string, unknown>;
-    const { upgradeType, passcode, excoOffice, tenureSession, coordinatorRoleTitle } = payload;
+    const { upgradeType, passcode, excoOffice, additionalOffices, tenureSession, coordinatorRoleTitle } = payload;
+
+    const cleanOffices = (input: unknown): string[] =>
+      Array.isArray(input)
+        ? Array.from(new Set(input.filter((o): o is string => typeof o === 'string' && o.trim().length > 0)))
+        : [];
 
     if (!['exco', 'coordinator', 'change-office'].includes(upgradeType as string)) {
       return NextResponse.json({ error: 'Invalid upgrade type' }, { status: 400 });
@@ -52,7 +57,11 @@ export async function POST(req: NextRequest) {
       }
       const { error: updateError } = await admin
         .from('profiles')
-        .update({ executive_office: excoOffice ?? null, tenure_session: tenureSession ?? null })
+        .update({
+          executive_office: excoOffice ?? null,
+          additional_offices: cleanOffices(additionalOffices),
+          tenure_session: tenureSession ?? null,
+        })
         .eq('id', user.id);
       if (updateError) {
         return NextResponse.json({ error: updateError.message }, { status: 400 });
@@ -78,6 +87,7 @@ export async function POST(req: NextRequest) {
     };
     if (upgradeType === 'exco') {
       update.executive_office = excoOffice ?? null;
+      update.additional_offices = cleanOffices(additionalOffices);
       update.tenure_session = tenureSession ?? null;
     } else if (upgradeType === 'coordinator') {
       update.executive_office = coordinatorRoleTitle ?? null;

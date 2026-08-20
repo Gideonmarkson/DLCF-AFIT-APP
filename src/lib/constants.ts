@@ -60,6 +60,7 @@ export const DLCF_EXCO_PORTFOLIOS = [
   'Ast Prayer Coord',
   'GPT Head',
   'Choir Master',
+  'Asst Choir Master',
   'Hall Representatives',
   'Head Usher',
   'Academic Director',

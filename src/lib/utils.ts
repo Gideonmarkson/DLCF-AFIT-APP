@@ -29,3 +29,25 @@ export function toWhatsAppNumber(phone: string | null | undefined, defaultCountr
   if (digits.length <= 10) return defaultCountryCode + digits;
   return digits;
 }
+
+// An Exco can hold more than one portfolio (e.g. General Coordinator who
+// is also Asst Choir Master). executive_office is always their primary
+// office; additional_offices holds anything extra. Anywhere the app checks
+// "does this person hold office X" (permissions, display, filtering)
+// should use this instead of a bare === comparison, so it's correct
+// regardless of whether X is their primary or an additional portfolio.
+export function holdsOffice(
+  executiveOffice: string | null | undefined,
+  additionalOffices: string[] | null | undefined,
+  office: string
+): boolean {
+  return executiveOffice === office || !!additionalOffices?.includes(office);
+}
+
+// All portfolios a person holds, primary first, for display purposes.
+export function allOffices(
+  executiveOffice: string | null | undefined,
+  additionalOffices: string[] | null | undefined
+): string[] {
+  return [executiveOffice, ...(additionalOffices ?? [])].filter((o): o is string => !!o);
+}

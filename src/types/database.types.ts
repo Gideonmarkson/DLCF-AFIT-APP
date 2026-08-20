@@ -15,6 +15,7 @@ export interface Profile {
   role: UserRole;
   church_unit: ChurchUnit;
   executive_office: string | null;
+  additional_offices: string[] | null;
   cgpa: number;
   is_underperforming: boolean;
   avatar_url: string | null;

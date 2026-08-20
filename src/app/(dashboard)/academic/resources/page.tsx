@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
 import { useRole } from '@/context/RoleContext';
+import { holdsOffice } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 
 interface Resource {
@@ -38,7 +39,7 @@ const LEVEL_OPTIONS = [
 
 export default function PastQuestionsPage() {
   const { profile } = useRole();
-  const isAcademicDirector = profile.executiveOffice === 'Academic Director';
+  const isAcademicDirector = holdsOffice(profile.executiveOffice, profile.additionalOffices, 'Academic Director');
   const [resources, setResources] = useState<Resource[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);

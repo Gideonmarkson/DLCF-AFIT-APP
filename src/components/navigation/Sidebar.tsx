@@ -28,6 +28,7 @@ interface SidebarProps {
   userName?: string;
   cgpa?: number;
   executiveOffice?: string | null;
+  additionalOffices?: string[];
   avatarUrl?: string | null;
 }
 
@@ -36,6 +37,7 @@ export function Sidebar({
   userName = 'Brother Daniel Adebayo',
   cgpa = 4.25,
   executiveOffice = null,
+  additionalOffices = [],
   avatarUrl = null,
 }: SidebarProps) {
   const pathname = usePathname();
@@ -165,7 +167,7 @@ export function Sidebar({
                 : isStaff
                   ? 'AFIT Associate Coordinator'
                   : isExco
-                    ? executiveOffice || 'Student Executive'
+                    ? [executiveOffice, ...additionalOffices].filter(Boolean).join(' • ') || 'Student Executive'
                     : 'AFIT Student Member'}
             </div>
           </div>

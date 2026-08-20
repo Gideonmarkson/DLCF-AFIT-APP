@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useRole } from '@/context/RoleContext';
+import { holdsOffice } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 
 interface PersonRow {
@@ -20,7 +21,7 @@ interface PersonRow {
 
 export default function PeerMentorshipPage() {
   const { profile } = useRole();
-  const isAcademicDirector = profile.executiveOffice === 'Academic Director';
+  const isAcademicDirector = holdsOffice(profile.executiveOffice, profile.additionalOffices, 'Academic Director');
 
   const [myPairing, setMyPairing] = useState<{ mentor: PersonRow } | null>(null);
   const [unpaired, setUnpaired] = useState<PersonRow[]>([]);

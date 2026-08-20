@@ -17,6 +17,7 @@ export interface UserProfile {
   currentLevel: string | null;
   department: string | null;
   executiveOffice: string | null;
+  additionalOffices: string[];
   tenureSession: string | null;
   avatarUrl: string | null;
   fellowshipUnits: string[];
@@ -36,6 +37,7 @@ const defaultProfile: UserProfile = {
   currentLevel: null,
   department: null,
   executiveOffice: null,
+  additionalOffices: [],
   tenureSession: null,
   avatarUrl: null,
   fellowshipUnits: [],

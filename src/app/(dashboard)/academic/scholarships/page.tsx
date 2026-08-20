@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useRole } from '@/context/RoleContext';
+import { holdsOffice } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 
 interface Scholarship {
@@ -30,7 +31,7 @@ function countdown(deadline: string | null) {
 
 export default function ScholarshipsPage() {
   const { profile } = useRole();
-  const isAcademicDirector = profile.executiveOffice === 'Academic Director';
+  const isAcademicDirector = holdsOffice(profile.executiveOffice, profile.additionalOffices, 'Academic Director');
 
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);

@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useRole } from '@/context/RoleContext';
+import { allOffices } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 
 const UNIT_OPTIONS = [
@@ -73,8 +74,8 @@ export function FellowshipNoticeFeed() {
     userRole === 'STUDENT_EXECUTIVE' ||
     userRole === 'ASSOCIATE_COORDINATOR';
 
-  const canPin = TOP_LEADERSHIP_OFFICES.includes(
-    profile.executiveOffice ?? ''
+  const canPin = allOffices(profile.executiveOffice, profile.additionalOffices).some((office) =>
+    TOP_LEADERSHIP_OFFICES.includes(office)
   );
 
   const [posts, setPosts] = useState<ForumPost[]>([]);

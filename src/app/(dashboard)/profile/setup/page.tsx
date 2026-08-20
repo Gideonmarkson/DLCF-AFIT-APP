@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge';
 import { useRole } from '@/context/RoleContext';
 import { AFIT_DEPARTMENTS, FELLOWSHIP_UNITS, DLCF_EXCO_PORTFOLIOS, ASSOCIATE_COORDINATOR_ROLES } from '@/lib/constants';
 import { DepartmentSelect } from '@/components/shared/DepartmentSelect';
+import { PortfolioMultiSelect } from '@/components/shared/PortfolioMultiSelect';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 
@@ -46,6 +47,7 @@ export default function ProfileSetupPage() {
   // Role-upgrade state (General Students only)
   const [upgradeType, setUpgradeType] = useState<'exco' | 'coordinator'>('exco');
   const [excoOffice, setExcoOffice] = useState(profile.executiveOffice ?? 'General Coordinator');
+  const [additionalOffices, setAdditionalOffices] = useState<string[]>(profile.additionalOffices ?? []);
   const [coordinatorRoleTitle, setCoordinatorRoleTitle] = useState(ASSOCIATE_COORDINATOR_ROLES[0]);
   const [tenureSession, setTenureSession] = useState(profile.tenureSession ?? '2025/2026');
   const [upgradePasscode, setUpgradePasscode] = useState('');
@@ -216,6 +218,7 @@ export default function ProfileSetupPage() {
           upgradeType,
           passcode: upgradePasscode,
           excoOffice: upgradeType === 'exco' ? excoOffice : undefined,
+          additionalOffices: upgradeType === 'exco' ? additionalOffices : undefined,
           tenureSession: upgradeType === 'exco' ? tenureSession : undefined,
           coordinatorRoleTitle: upgradeType === 'coordinator' ? coordinatorRoleTitle : undefined,
         }),
@@ -238,7 +241,7 @@ export default function ProfileSetupPage() {
       const res = await fetch('/api/account/upgrade-role', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ upgradeType: 'change-office', excoOffice, tenureSession }),
+        body: JSON.stringify({ upgradeType: 'change-office', excoOffice, additionalOffices, tenureSession }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Could not update office');
@@ -566,11 +569,27 @@ export default function ProfileSetupPage() {
             {upgradeType === 'exco' && (
               <div className="space-y-1">
                 <label className="block text-xs font-extrabold text-[#1F2937]">Executive Office</label>
-                <Select value={excoOffice} onChange={(e) => setExcoOffice(e.target.value)} className="text-xs">
+                <Select
+                  value={excoOffice}
+                  onChange={(e) => {
+                    setExcoOffice(e.target.value);
+                    setAdditionalOffices((prev) => prev.filter((o) => o !== e.target.value));
+                  }}
+                  className="text-xs"
+                >
                   {DLCF_EXCO_PORTFOLIOS.map((office: string) => (
                     <option key={office} value={office}>{office}</option>
                   ))}
                 </Select>
+              </div>
+            )}
+
+            {upgradeType === 'exco' && (
+              <div className="space-y-1 sm:col-span-2">
+                <label className="block text-xs font-extrabold text-[#1F2937]">
+                  Additional Portfolios <span className="font-semibold text-[#6B7280]">(optional — select any other roles also held)</span>
+                </label>
+                <PortfolioMultiSelect primaryOffice={excoOffice} selected={additionalOffices} onChange={setAdditionalOffices} />
               </div>
             )}
 
@@ -628,19 +647,33 @@ export default function ProfileSetupPage() {
               <ShieldCheck className="w-4 h-4 text-[#1D4ED8]" /> Change My Executive Office
             </h2>
             <p className="text-xs text-[#6B7280]">
-              Reassigned to a different portfolio? Update it here — this doesn&apos;t need the passcode again since
-              you&apos;re already accredited.
+              Reassigned to a different portfolio, or taken on an additional one? Update it here — this doesn&apos;t
+              need the passcode again since you&apos;re already accredited.
             </p>
           </div>
 
           <form onSubmit={handleChangeOffice} className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
             <div className="space-y-1 sm:col-span-2">
-              <label className="block text-xs font-extrabold text-[#1F2937]">New Executive Office</label>
-              <Select value={excoOffice} onChange={(e) => setExcoOffice(e.target.value)} className="text-xs">
+              <label className="block text-xs font-extrabold text-[#1F2937]">Primary Executive Office</label>
+              <Select
+                value={excoOffice}
+                onChange={(e) => {
+                  setExcoOffice(e.target.value);
+                  setAdditionalOffices((prev) => prev.filter((o) => o !== e.target.value));
+                }}
+                className="text-xs"
+              >
                 {DLCF_EXCO_PORTFOLIOS.map((office: string) => (
                   <option key={office} value={office}>{office}</option>
                 ))}
               </Select>
+            </div>
+
+            <div className="space-y-1 sm:col-span-2">
+              <label className="block text-xs font-extrabold text-[#1F2937]">
+                Additional Portfolios <span className="font-semibold text-[#6B7280]">(hold more than one role? select them all)</span>
+              </label>
+              <PortfolioMultiSelect primaryOffice={excoOffice} selected={additionalOffices} onChange={setAdditionalOffices} />
             </div>
 
             <div className="space-y-1 sm:col-span-2">

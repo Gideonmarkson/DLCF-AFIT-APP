@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
       level,
       cgpa,
       excoOffice,
+      additionalOffices,
       matricNo,
       tenureSession,
       coordinatorRoleTitle,
@@ -129,6 +130,10 @@ export async function POST(req: NextRequest) {
             : null,
       tenure_session: registrationType === 'exco' ? tenureSession ?? null : null,
       cgpa: registrationType === 'exco' ? Number(cgpa) || 0 : 0,
+      additional_offices:
+        registrationType === 'exco' && Array.isArray(additionalOffices)
+          ? Array.from(new Set(additionalOffices.filter((o): o is string => typeof o === 'string' && o.trim().length > 0)))
+          : [],
     };
 
     const { error: profileError } = await admin.from('profiles').insert(profileInsert);

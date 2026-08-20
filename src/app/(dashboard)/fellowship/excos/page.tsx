@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DLCF_EXCO_PORTFOLIOS } from '@/lib/constants';
 import { createClient } from '@/lib/supabase/client';
-import { toWhatsAppNumber } from '@/lib/utils';
+import { toWhatsAppNumber, allOffices } from '@/lib/utils';
 
 interface ExcoMember {
   id: string;
   name: string;
   portfolio: string;
+  additionalPortfolios: string[];
   department: string;
   level: string;
   cgpa: number;
@@ -33,40 +34,46 @@ export default function StudentExcosPage() {
       const supabase = createClient();
       const { data } = await supabase
         .from('profiles')
-        .select('id, full_name, executive_office, department, current_level, cgpa, phone_number, tenure_session, avatar_url')
+        .select('id, full_name, executive_office, additional_offices, department, current_level, cgpa, phone_number, tenure_session, avatar_url')
         .eq('role', 'STUDENT_EXECUTIVE');
 
       setExcos(
-        (data ?? []).map((p) => ({
-          id: p.id,
-          name: p.full_name ?? 'Unnamed',
-          portfolio: p.executive_office ?? 'Executive',
-          department: p.department ?? '—',
-          level: p.current_level ? `${p.current_level}L` : '—',
-          cgpa: p.cgpa ?? 0,
-          bio: `Serving as ${p.executive_office ?? 'a Student Executive'} for the fellowship.`,
-          initials: (p.full_name ?? 'U U')
-            .split(' ')
-            .filter(Boolean)
-            .slice(0, 2)
-            .map((w: string) => w[0])
-            .join('')
-            .toUpperCase(),
-          phone: p.phone_number ?? '',
-          tenureSession: p.tenure_session ?? '',
-          avatarUrl: p.avatar_url ?? null,
-        }))
+        (data ?? []).map((p) => {
+          const additional = p.additional_offices ?? [];
+          const all = allOffices(p.executive_office, additional);
+          return {
+            id: p.id,
+            name: p.full_name ?? 'Unnamed',
+            portfolio: p.executive_office ?? 'Executive',
+            additionalPortfolios: additional,
+            department: p.department ?? '—',
+            level: p.current_level ? `${p.current_level}L` : '—',
+            cgpa: p.cgpa ?? 0,
+            bio: `Serving as ${all.length > 1 ? all.join(' & ') : all[0] ?? 'a Student Executive'} for the fellowship.`,
+            initials: (p.full_name ?? 'U U')
+              .split(' ')
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((w: string) => w[0])
+              .join('')
+              .toUpperCase(),
+            phone: p.phone_number ?? '',
+            tenureSession: p.tenure_session ?? '',
+            avatarUrl: p.avatar_url ?? null,
+          };
+        })
       );
     };
     load();
   }, []);
 
   const filteredExcos = excos.filter((exco) => {
+    const allPortfolios = [exco.portfolio, ...exco.additionalPortfolios];
     const matchesSearch =
       exco.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exco.portfolio.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      allPortfolios.some((p) => p.toLowerCase().includes(searchTerm.toLowerCase())) ||
       exco.department.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPort = selectedPortfolio === 'ALL' || exco.portfolio === selectedPortfolio;
+    const matchesPort = selectedPortfolio === 'ALL' || allPortfolios.includes(selectedPortfolio);
     return matchesSearch && matchesPort;
   });
 
@@ -152,6 +159,15 @@ export default function StudentExcosPage() {
                     <CardDescription className="text-xs font-bold text-[#1D4ED8] mt-0.5">
                       {exco.portfolio}{exco.tenureSession ? ` · ${exco.tenureSession}` : ''}
                     </CardDescription>
+                    {exco.additionalPortfolios.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {exco.additionalPortfolios.map((p) => (
+                          <Badge key={p} variant="slate" className="text-[10px] font-semibold">
+                            {p}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <Badge variant="gold" className="font-mono text-xs">
