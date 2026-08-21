@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 
-// Drop your real photos into /public/hero/ named slide-1.jpg through slide-15.jpg
+// Drop your real photos into /public/hero/ named slide-0.jpg through slide-15.jpg
 // (any you don't have yet just won't load — the gradient behind covers the gap).
-const SLIDES = Array.from({ length: 15 }, (_, i) => `/hero/slide-${i + 1}.jpg`);
+const SLIDES = Array.from({ length: 16 }, (_, i) => `/hero/slide-${i}.jpg`);
 
 export function WelcomeHero({ firstName }: { firstName: string }) {
   const [activeSlide, setActiveSlide] = useState(0);
