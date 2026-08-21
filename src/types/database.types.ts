@@ -86,7 +86,7 @@ export interface ForumPost {
   author_id: string;
   title: string;
   content: string;
-  target_unit: ChurchUnit;
+  target_unit: string;
   target_department?: string | null;
   is_announcement: boolean;
   created_at: string;

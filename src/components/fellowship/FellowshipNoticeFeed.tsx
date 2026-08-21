@@ -15,19 +15,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useRole } from '@/context/RoleContext';
 import { allOffices } from '@/lib/utils';
+import { UnitSelect } from '@/components/shared/UnitSelect';
 import { createClient } from '@/lib/supabase/client';
-
-const UNIT_OPTIONS = [
-  { value: 'NONE', label: 'General / All Units' },
-  { value: 'CHOIR', label: 'Choir' },
-  { value: 'PRAYER', label: 'Prayer' },
-  { value: 'USHERING', label: 'Ushering' },
-  { value: 'ACADEMICS', label: 'Academics' },
-  { value: 'PUBLICITY', label: 'Publicity' },
-  { value: 'EVANGELISM', label: 'Evangelism' },
-  { value: 'TECHNICAL', label: 'Technical' },
-  { value: 'SANCTUARY', label: 'Sanctuary' },
-];
 
 const TOP_LEADERSHIP_OFFICES = [
   'General Coordinator',
@@ -426,17 +415,12 @@ export function FellowshipNoticeFeed() {
             </div>
 
             <div>
-              <select
+              <UnitSelect
                 value={targetUnit}
-                onChange={(event) => setTargetUnit(event.target.value)}
+                onChange={setTargetUnit}
                 className="h-10 w-full rounded-xl border border-[#E2E8F0] bg-white text-xs text-[#1F2937] px-3 font-semibold focus:border-[#1D4ED8]"
-              >
-                {UNIT_OPTIONS.map((unit) => (
-                  <option key={unit.value} value={unit.value}>
-                    Unit: {unit.label}
-                  </option>
-                ))}
-              </select>
+                labelPrefix="Unit: "
+              />
             </div>
           </div>
 

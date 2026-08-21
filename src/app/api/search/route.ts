@@ -41,10 +41,10 @@ export async function GET(request: NextRequest) {
 
   const pattern = `%${q}%`;
 
-  // Important: forum_posts.target_unit is a Postgres enum
-  // (church_unit_type), so it cannot safely be queried with ILIKE
-  // through PostgREST. Searching title/content keeps the endpoint
-  // compatible with the actual schema.
+  // forum_posts.target_unit was previously a Postgres enum (church_unit_type)
+  // and couldn't safely be queried with ILIKE through PostgREST. It's now
+  // plain TEXT (see migration 20260818000000_forum_target_unit_to_text.sql),
+  // so it's searchable like any other text column.
   //
   // The resources query intentionally does not select the optional
   // level column because search does not need it; this keeps search
@@ -66,8 +66,8 @@ export async function GET(request: NextRequest) {
 
     supabase
       .from('forum_posts')
-      .select('id, title, content, created_at')
-      .or(`title.ilike.${pattern},content.ilike.${pattern}`)
+      .select('id, title, content, target_unit, created_at')
+      .or(`title.ilike.${pattern},content.ilike.${pattern},target_unit.ilike.${pattern}`)
       .order('created_at', { ascending: false })
       .limit(MAX_PER_CATEGORY),
 

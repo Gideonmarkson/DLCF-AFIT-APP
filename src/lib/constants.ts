@@ -76,10 +76,8 @@ export const FELLOWSHIP_UNITS = [
   'Media',
   'Maintenance',
   'Drama',
-  'Organising',
   'Publicity',
   'Follow-Up',
-  'Sister Welfare',
 ];
 
 export const ASSOCIATE_COORDINATOR_ROLES = [
