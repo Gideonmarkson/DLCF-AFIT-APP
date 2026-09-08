@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { AcademicSubNav } from '@/components/academic/AcademicSubNav';
 import { GraduationCap, Plus, Trash2, Upload, FileCheck, CheckCircle2, Calculator, ArrowRight, ShieldCheck, HeartHandshake } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -14,17 +14,35 @@ import { createClient } from '@/lib/supabase/client';
 
 interface RegisteredCourse {
   registrationId: string;
+  courseId: string;
   code: string;
   title: string;
   units: number;
 }
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+const ALLOWED_FILE_TYPES = new Set([
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+]);
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error && error.message) return error.message;
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === 'string' && message) return message;
+  }
+  return fallback;
+}
+
 export default function CourseRegistrationPage() {
   const { userRole } = useRole();
   const isStaff = userRole === 'ASSOCIATE_COORDINATOR';
-
   const [session, setSession] = useState('2025/2026');
   const [semester, setSemester] = useState('First Semester');
+  const [currentLevel, setCurrentLevel] = useState('');
   const [courses, setCourses] = useState<RegisteredCourse[]>([]);
   const [newCode, setNewCode] = useState('');
   const [newTitle, setNewTitle] = useState('');
@@ -33,39 +51,78 @@ export default function CourseRegistrationPage() {
   const [slipUrl, setSlipUrl] = useState<string | null>(null);
   const [isSavedSuccess, setIsSavedSuccess] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [addingCourse, setAddingCourse] = useState(false);
+  const [removingCourseId, setRemovingCourseId] = useState<string | null>(null);
   const [error, setError] = useState('');
 
-  const loadData = async () => {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setLoading(false); return; }
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError('');
 
-    const { data: profileRow } = await supabase.from('profiles').select('course_slip_url').eq('id', user.id).single();
-    setSlipUrl(profileRow?.course_slip_url ?? null);
+    const supabase = createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError) {
+      setError(`Could not confirm your login session: ${authError.message}`);
+      setLoading(false);
+      return;
+    }
+
+    if (!user) {
+      setError('Your session has expired. Please sign in again.');
+      setLoading(false);
+      return;
+    }
 
     const semesterNum = semester === 'First Semester' ? 1 : 2;
-    const { data: regs } = await supabase
-      .from('student_registered_courses')
-      .select('id, academic_session, semester, courses(course_code, course_title, credit_units)')
-      .eq('student_id', user.id)
-      .eq('academic_session', session)
-      .eq('semester', semesterNum);
 
-    setCourses(
-      (regs ?? []).map((r: any) => ({
-        registrationId: r.id,
-        code: r.courses?.course_code ?? '—',
-        title: r.courses?.course_title ?? '—',
-        units: r.courses?.credit_units ?? 0,
-      }))
-    );
+    const [profileResult, registrationsResult] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('course_slip_url, current_level')
+        .eq('id', user.id)
+        .single(),
+      supabase
+        .from('student_registered_courses')
+        .select('id, academic_session, semester, course_id, courses(course_code, course_title, credit_units)')
+        .eq('student_id', user.id)
+        .eq('academic_session', session)
+        .eq('semester', semesterNum)
+        .order('created_at', { ascending: true }),
+    ]);
+
+    if (profileResult.error) {
+      setError(`Could not load your academic profile: ${profileResult.error.message}`);
+    } else {
+      setSlipUrl(profileResult.data?.course_slip_url ?? null);
+      setCurrentLevel(profileResult.data?.current_level ? String(profileResult.data.current_level) : '');
+    }
+
+    if (registrationsResult.error) {
+      setCourses([]);
+      setError((previous) => previous || `Could not load your registered courses: ${registrationsResult.error.message}`);
+    } else {
+      setCourses(
+        (registrationsResult.data ?? []).map((row: any) => ({
+          registrationId: row.id,
+          courseId: row.course_id,
+          code: row.courses?.course_code ?? '—',
+          title: row.courses?.course_title ?? '—',
+          units: Number(row.courses?.credit_units ?? 0),
+        }))
+      );
+    }
+
     setLoading(false);
-  };
+  }, [semester, session]);
 
   useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, semester]);
+    void loadData();
+  }, [loadData]);
 
   if (isStaff) {
     return (
@@ -76,9 +133,7 @@ export default function CourseRegistrationPage() {
           </div>
           <div className="space-y-2">
             <Badge variant="blue" className="text-xs">Associate Coordinator Access Guard</Badge>
-            <h2 className="text-xl font-extrabold text-[#1F2937]">
-              Course Registration is Reserved for AFIT Students
-            </h2>
+            <h2 className="text-xl font-extrabold text-[#1F2937]">Course Registration is Reserved for AFIT Students</h2>
             <p className="text-xs text-[#6B7280] leading-relaxed max-w-md mx-auto">
               As an Associate Coordinator, your portal is designated for pastoral care, confidential member counseling replies, and fellowship advisory.
             </p>
@@ -98,78 +153,213 @@ export default function CourseRegistrationPage() {
     );
   }
 
-  const totalUnits = courses.reduce((sum, c) => sum + Number(c.units), 0);
+  const totalUnits = courses.reduce((sum, course) => sum + Number(course.units), 0);
 
   const handleAddCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!newCode || !newTitle) return;
 
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const code = newCode.toUpperCase();
-    const { data: existingCourse } = await supabase.from('courses').select('id').eq('course_code', code).maybeSingle();
-
-    let courseId = existingCourse?.id;
-    if (!courseId) {
-      const { data: profileRow } = await supabase.from('profiles').select('department').eq('id', user.id).single();
-      const { data: newCourse, error: courseErr } = await supabase
-        .from('courses')
-        .insert({ course_code: code, course_title: newTitle, credit_units: newUnits, level: 300, department: profileRow?.department ?? 'General' })
-        .select('id')
-        .single();
-      if (courseErr) { setError(courseErr.message); return; }
-      courseId = newCourse.id;
+    const code = newCode.trim().toUpperCase();
+    if (!code) {
+      setError('Enter a valid course code.');
+      return;
     }
 
-    const { error: regErr } = await supabase.from('student_registered_courses').insert({
-      student_id: user.id,
-      course_id: courseId,
-      academic_session: session,
-      semester: semester === 'First Semester' ? 1 : 2,
-    });
-    if (regErr) { setError(regErr.message); return; }
+    setAddingCourse(true);
+    const supabase = createClient();
 
-    setNewCode('');
-    setNewTitle('');
-    setNewUnits(3);
-    loadData();
+    try {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        throw new Error(authError?.message || 'Your session has expired. Please sign in again.');
+      }
+
+      // Courses are catalog records maintained by the Academic Director.
+      // Students should register an existing course, not create catalog records.
+      const { data: existingCourse, error: courseLookupError } = await supabase
+        .from('courses')
+        .select('id, course_code, course_title, credit_units, level, department')
+        .eq('course_code', code)
+        .maybeSingle();
+
+      if (courseLookupError) throw courseLookupError;
+      if (!existingCourse) {
+        throw new Error(`Course ${code} is not in the AFIT course catalogue. Ask the Academic Director to add it before registering.`);
+      }
+
+      if (currentLevel && String(existingCourse.level) !== currentLevel) {
+        throw new Error(`Course ${code} is catalogued for ${existingCourse.level}L, while your profile is ${currentLevel}L.`);
+      }
+
+      const semesterNum = semester === 'First Semester' ? 1 : 2;
+      const alreadyListed = courses.some((course) => course.courseId === existingCourse.id);
+      if (alreadyListed) {
+        throw new Error(`${code} is already in this semester's course list.`);
+      }
+
+      // Keep the course in local pending state. The final save operation commits
+      // all registration rows together instead of partially registering courses.
+      setCourses((previous) => [
+        ...previous,
+        {
+          registrationId: `pending-${existingCourse.id}-${semesterNum}`,
+          courseId: existingCourse.id,
+          code: existingCourse.course_code,
+          title: existingCourse.course_title,
+          units: Number(existingCourse.credit_units),
+        },
+      ]);
+      setNewCode('');
+      setNewTitle('');
+      setNewUnits(3);
+    } catch (caughtError) {
+      setError(getErrorMessage(caughtError, 'Could not add this course.'));
+    } finally {
+      setAddingCourse(false);
+    }
   };
 
-  const handleRemoveCourse = async (registrationId: string) => {
-    const supabase = createClient();
-    await supabase.from('student_registered_courses').delete().eq('id', registrationId);
-    loadData();
+  const handleRemoveCourse = async (course: RegisteredCourse) => {
+    setError('');
+    setRemovingCourseId(course.registrationId);
+
+    try {
+      // Pending courses only exist in local state.
+      if (course.registrationId.startsWith('pending-')) {
+        setCourses((previous) => previous.filter((item) => item.registrationId !== course.registrationId));
+        return;
+      }
+
+      const supabase = createClient();
+      const { error: deleteError } = await supabase
+        .from('student_registered_courses')
+        .delete()
+        .eq('id', course.registrationId);
+
+      if (deleteError) throw deleteError;
+      setCourses((previous) => previous.filter((item) => item.registrationId !== course.registrationId));
+    } catch (caughtError) {
+      setError(getErrorMessage(caughtError, 'Could not remove the course.'));
+    } finally {
+      setRemovingCourseId(null);
+    }
+  };
+
+  const handleSlipSelection = (file: File | null) => {
+    setError('');
+    if (!file) {
+      setSlipFile(null);
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      setSlipFile(null);
+      setError('The course registration slip is larger than 10MB. Please choose a smaller file.');
+      return;
+    }
+
+    if (!ALLOWED_FILE_TYPES.has(file.type)) {
+      setSlipFile(null);
+      setError('Unsupported file type. Upload a PDF, PNG, or JPG file.');
+      return;
+    }
+
+    setSlipFile(file);
   };
 
   const handleSaveRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSaving(true);
+    setIsSavedSuccess(false);
 
-    if (slipFile) {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const ext = slipFile.name.split('.').pop();
-      const path = `${user.id}/slip.${ext}`;
-      const { error: uploadError } = await supabase.storage.from('course-slips').upload(path, slipFile, { upsert: true });
-      if (uploadError) { setError(uploadError.message); return; }
-      const { data: publicUrlData } = supabase.storage.from('course-slips').getPublicUrl(path);
-      const freshUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`;
-      await supabase.from('profiles').update({ course_slip_url: freshUrl }).eq('id', user.id);
-      setSlipUrl(freshUrl);
+    let uploadedPath: string | null = null;
+    const supabase = createClient();
+
+    try {
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        throw new Error(authError?.message || 'Your session has expired. Please sign in again.');
+      }
+
+      if (courses.length === 0) {
+        throw new Error('Add at least one course before completing registration.');
+      }
+
+      const semesterNum = semester === 'First Semester' ? 1 : 2;
+
+      if (slipFile) {
+        const ext = slipFile.name.split('.').pop()?.toLowerCase() || 'pdf';
+        uploadedPath = `${user.id}/course-slip.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('course-slips')
+          .upload(uploadedPath, slipFile, {
+            upsert: true,
+            cacheControl: '3600',
+            contentType: slipFile.type,
+          });
+
+        if (uploadError) {
+          throw new Error(
+            `Course slip upload failed: ${uploadError.message}. Confirm the course-slips storage bucket/policies migration has been applied in Supabase.`
+          );
+        }
+
+        const { data: publicUrlData } = supabase.storage.from('course-slips').getPublicUrl(uploadedPath);
+        if (!publicUrlData?.publicUrl) throw new Error('The course slip uploaded, but its public URL could not be created.');
+
+        const freshUrl = `${publicUrlData.publicUrl}?t=${Date.now()}`;
+        const { error: profileUpdateError } = await supabase
+          .from('profiles')
+          .update({ course_slip_url: freshUrl })
+          .eq('id', user.id);
+
+        if (profileUpdateError) throw profileUpdateError;
+        setSlipUrl(freshUrl);
+      }
+
+      const rowsToPersist = courses.map((course) => ({
+        student_id: user.id,
+        course_id: course.courseId,
+        academic_session: session,
+        semester: semesterNum,
+      }));
+
+      const { error: registrationError } = await supabase
+        .from('student_registered_courses')
+        .upsert(rowsToPersist, {
+          onConflict: 'student_id,course_id,academic_session,semester',
+          ignoreDuplicates: true,
+        });
+
+      if (registrationError) throw registrationError;
+
+      await loadData();
+      setIsSavedSuccess(true);
+      window.setTimeout(() => setIsSavedSuccess(false), 2500);
+    } catch (caughtError) {
+      // Do not leave an uploaded slip orphaned if the DB write fails.
+      if (uploadedPath) {
+        await supabase.storage.from('course-slips').remove([uploadedPath]).catch(() => undefined);
+      }
+      setError(getErrorMessage(caughtError, 'Could not complete course registration.'));
+    } finally {
+      setSaving(false);
     }
-
-    setIsSavedSuccess(true);
-    setTimeout(() => setIsSavedSuccess(false), 2500);
   };
 
   return (
     <div className="space-y-6 font-sans">
       <AcademicSubNav />
-
       <div className="p-6 rounded-3xl bg-gradient-to-r from-white via-[#EFF6FF] to-white border border-[#E2E8F0] shadow-xs space-y-2">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -181,15 +371,11 @@ export default function CourseRegistrationPage() {
                 <h1 className="text-xl font-extrabold text-[#1F2937] tracking-tight">AFIT Session Course Registration Portal</h1>
                 <Badge variant="blue">{session}</Badge>
               </div>
-              <p className="text-xs text-[#6B7280] font-medium mt-0.5">
-                Register your courses, calculate total credit units, and upload official AFIT course slip proof.
-              </p>
+              <p className="text-xs text-[#6B7280] font-medium mt-0.5">Register your courses, calculate total credit units, and upload official AFIT course slip proof.</p>
             </div>
           </div>
           <Link href="/academic/peer-network">
-            <Button variant="primary" size="sm" className="gap-1.5 rounded-xl font-bold">
-              View Peer Mentorship Network <ArrowRight className="w-4 h-4" />
-            </Button>
+            <Button variant="primary" size="sm" className="gap-1.5 rounded-xl font-bold">View Peer Mentorship Network <ArrowRight className="w-4 h-4" /></Button>
           </Link>
         </div>
       </div>
@@ -198,12 +384,9 @@ export default function CourseRegistrationPage() {
         <div className="lg:col-span-7 space-y-6">
           <Card className="border-[#E2E8F0] bg-white p-6 space-y-5 shadow-xs">
             <div>
-              <h2 className="text-base font-extrabold text-[#1F2937] flex items-center gap-2">
-                <Calculator className="w-5 h-5 text-[#1D4ED8]" /> Session &amp; Semester Course Setup
-              </h2>
-              <p className="text-xs text-[#6B7280]">Type your academic session — this app has no fixed end date, so it's a free text field, not a dropdown.</p>
+              <h2 className="text-base font-extrabold text-[#1F2937] flex items-center gap-2"><Calculator className="w-5 h-5 text-[#1D4ED8]" /> Session &amp; Semester Course Setup</h2>
+              <p className="text-xs text-[#6B7280]">Use the academic session for which you are registering. Courses are taken from the official AFIT catalogue.</p>
             </div>
-
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="block text-xs font-extrabold text-[#1F2937]">Academic Session</label>
@@ -222,48 +405,38 @@ export default function CourseRegistrationPage() {
               <div className="text-xs font-extrabold text-[#1D4ED8]">Add Enrolled Course Entry</div>
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
                 <div className="sm:col-span-4">
-                  <Input placeholder="e.g. AEE 311" value={newCode} onChange={(e) => setNewCode(e.target.value)} className="text-xs font-mono font-bold uppercase" required />
+                  <Input placeholder="e.g. EEE 309" value={newCode} onChange={(e) => setNewCode(e.target.value)} className="text-xs font-mono font-bold uppercase" required />
                 </div>
                 <div className="sm:col-span-5">
-                  <Input placeholder="e.g. Aerodynamics I" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="text-xs" required />
+                  <Input placeholder="Title (for reference)" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="text-xs" />
                 </div>
                 <div className="sm:col-span-3">
-                  <Input type="number" min="1" max="6" placeholder="Units" value={newUnits} onChange={(e) => setNewUnits(Number(e.target.value))} className="text-xs font-mono font-bold" required />
+                  <Input type="number" min="1" max="6" placeholder="Units" value={newUnits} onChange={(e) => setNewUnits(Number(e.target.value))} className="text-xs font-mono font-bold" disabled />
                 </div>
               </div>
-              <Button type="submit" size="sm" variant="outline" className="w-full text-xs font-bold gap-1 border-[#1D4ED8] text-[#1D4ED8]">
-                <Plus className="w-4 h-4" /> Add Course to List
+              <p className="text-[10px] text-[#6B7280]">The title and units shown here are read from the official catalogue after the course code is found.</p>
+              <Button type="submit" size="sm" variant="outline" className="w-full text-xs font-bold gap-1 border-[#1D4ED8] text-[#1D4ED8]" disabled={addingCourse || loading}>
+                <Plus className="w-4 h-4" /> {addingCourse ? 'Checking catalogue…' : 'Add Course to List'}
               </Button>
             </form>
 
             <div className="space-y-2">
-              <label className="block text-xs font-extrabold text-[#1F2937]">
-                Official AFIT Course Registration Slip (PDF / Image)
-              </label>
+              <label className="block text-xs font-extrabold text-[#1F2937]">Official AFIT Course Registration Slip (PDF / Image)</label>
               {slipUrl && !slipFile && (
                 <a href={slipUrl} target="_blank" rel="noopener noreferrer" className="block p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800">
                   A slip is already on file — click to view. Upload a new one below to replace it.
                 </a>
               )}
               <div className="relative border-2 border-dashed border-[#CBD5E1] rounded-2xl p-4 text-center hover:border-[#1D4ED8] transition-colors bg-[#F8FAFC]">
-                <input type="file" accept="image/*,.pdf" onChange={(e) => setSlipFile(e.target.files?.[0] || null)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                <div className="flex flex-col items-center gap-1.5">
-                  <Upload className="w-6 h-6 text-[#1D4ED8]" />
-                  <span className="text-xs font-bold text-[#1F2937]">{slipFile ? slipFile.name : 'Click or drop official AFIT Course Slip'}</span>
-                  <span className="text-[10px] text-[#6B7280]">Supports PDF, PNG, JPG (Max 10MB) — stays on file until you upload a replacement</span>
-                </div>
+                <input type="file" accept="application/pdf,image/png,image/jpeg" onChange={(e) => handleSlipSelection(e.target.files?.[0] || null)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                <div className="flex flex-col items-center gap-1.5"><Upload className="w-6 h-6 text-[#1D4ED8]" /><span className="text-xs font-bold text-[#1F2937]">{slipFile ? slipFile.name : 'Click or drop official AFIT Course Slip'}</span><span className="text-[10px] text-[#6B7280]">Supports PDF, PNG, JPG (Max 10MB)</span></div>
               </div>
             </div>
 
-            {error && <p className="text-xs text-red-600 font-bold">{error}</p>}
-            {isSavedSuccess && (
-              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Saved successfully.
-              </div>
-            )}
-
-            <Button onClick={handleSaveRegistration} variant="primary" className="w-full text-xs font-bold gap-2 rounded-xl py-2.5">
-              <FileCheck className="w-4 h-4" /> Complete &amp; Save Course Registration
+            {error && <p className="text-xs text-red-600 font-bold" role="alert">{error}</p>}
+            {isSavedSuccess && <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> Saved successfully.</div>}
+            <Button onClick={handleSaveRegistration} variant="primary" className="w-full text-xs font-bold gap-2 rounded-xl py-2.5" disabled={saving || loading}>
+              <FileCheck className="w-4 h-4" /> {saving ? 'Saving registration…' : 'Complete & Save Course Registration'}
             </Button>
           </Card>
         </div>
@@ -271,35 +444,16 @@ export default function CourseRegistrationPage() {
         <div className="lg:col-span-5 space-y-4">
           <Card className="border-[#E2E8F0] bg-white p-6 space-y-4 shadow-xs">
             <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
-              <div>
-                <h2 className="text-sm font-extrabold text-[#1F2937]">Enrolled Session Courses ({courses.length})</h2>
-                <p className="text-[11px] text-[#6B7280]">Registered for {semester} {session}</p>
-              </div>
+              <div><h2 className="text-sm font-extrabold text-[#1F2937]">Enrolled Session Courses ({courses.length})</h2><p className="text-[11px] text-[#6B7280]">Registered for {semester} {session}</p></div>
               <Badge variant="blue" className="text-xs font-mono">Total: {totalUnits} Units</Badge>
             </div>
-
             <div className="space-y-2.5">
-              {loading ? (
-                <p className="text-xs text-[#6B7280]">Loading...</p>
-              ) : courses.length === 0 ? (
-                <p className="text-xs text-[#6B7280]">No courses registered for this session/semester yet.</p>
-              ) : (
-                courses.map((course) => (
-                  <div key={course.registrationId} className="p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-between text-xs">
-                    <div className="space-y-0.5">
-                      <div className="font-extrabold text-[#1F2937] flex items-center gap-2">
-                        <span className="font-mono text-[#1D4ED8]">{course.code}</span>
-                        <span>•</span>
-                        <span>{course.title}</span>
-                      </div>
-                      <div className="text-[10px] text-[#6B7280] font-mono">{course.units} Credit Units</div>
-                    </div>
-                    <button onClick={() => handleRemoveCourse(course.registrationId)} className="p-1 text-slate-400 hover:text-rose-600 transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))
-              )}
+              {loading ? <p className="text-xs text-[#6B7280]">Loading your academic record…</p> : courses.length === 0 ? <p className="text-xs text-[#6B7280]">No courses registered for this session/semester yet.</p> : courses.map((course) => (
+                <div key={course.registrationId} className="p-3.5 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] flex items-center justify-between text-xs">
+                  <div className="space-y-0.5"><div className="font-extrabold text-[#1F2937] flex items-center gap-2"><span className="font-mono text-[#1D4ED8]">{course.code}</span><span>•</span><span>{course.title}</span></div><div className="text-[10px] text-[#6B7280] font-mono">{course.units} Credit Units{course.registrationId.startsWith('pending-') ? ' · Pending save' : ''}</div></div>
+                  <button type="button" aria-label={`Remove ${course.code}`} onClick={() => void handleRemoveCourse(course)} disabled={removingCourseId === course.registrationId} className="p-1 text-slate-400 hover:text-rose-600 transition-colors disabled:opacity-50"><Trash2 className="w-4 h-4" /></button>
+                </div>
+              ))}
             </div>
           </Card>
         </div>
