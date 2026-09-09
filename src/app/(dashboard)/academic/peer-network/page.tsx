@@ -347,7 +347,7 @@ export default function PeerMentorshipPage() {
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant="secondary" className="text-[10px]">
+                    <Badge variant="slate" className="text-[10px]">
                       Active
                     </Badge>
                     <Button
