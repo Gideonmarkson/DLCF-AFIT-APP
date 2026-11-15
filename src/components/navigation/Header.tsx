@@ -160,7 +160,7 @@ export function Header({
   };
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 sm:h-20 items-center justify-between border-b border-[#E2E8F0] bg-white px-4 sm:px-6 md:px-8 shadow-xs font-sans">
+    <header className="sticky top-0 z-40 flex h-16 sm:h-20 items-center justify-between border-b border-[#E2E8F0] bg-white px-4 sm:px-6 md:px-8 shadow-xs font-sans">
       <div className="flex items-center gap-2.5">
         <div className="lg:hidden relative w-9 h-9 rounded-full overflow-hidden bg-white p-0.5 border border-[#1E3A8A] shadow-2xs shrink-0">
           <Image src="/dlcf_afit_logo.png" alt="DLCF AFIT Official Logo" fill className="object-contain p-0.5" />
@@ -193,7 +193,13 @@ export function Header({
           </button>
 
           {isNotificationsOpen && (
-            <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-3xl bg-white border border-[#E2E8F0] shadow-2xl p-4 space-y-3 z-50 animate-fadeIn font-sans">
+            <div
+              className={cn(
+                'fixed inset-x-4 top-[4.5rem] max-h-[75vh] overflow-y-auto',
+                'sm:absolute sm:inset-x-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-96 sm:max-h-none sm:overflow-visible',
+                'rounded-3xl bg-white border border-[#E2E8F0] shadow-2xl p-4 space-y-3 z-50 animate-fadeIn font-sans'
+              )}
+            >
               <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0]">
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-extrabold text-[#1F2937]">Fellowship Notifications</h3>
