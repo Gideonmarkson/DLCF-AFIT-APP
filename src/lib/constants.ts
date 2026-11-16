@@ -13,6 +13,7 @@ export const AFIT_DEPARTMENTS: AFITDepartment[] = [
   { name: 'B.Eng Mechatronics Engineering', category: 'DEGREE' },
   { name: 'B.Eng Metallurgical & Materials Engineering', category: 'DEGREE' },
   { name: 'B.Eng Information & Communication Technology', category: 'DEGREE' },
+  { name: 'B.Eng Telecommunications Engineering', category: 'DEGREE' },
   { name: 'B.Sc Computer Science', category: 'DEGREE' },
   { name: 'B.Sc Cyber Security', category: 'DEGREE' },
   { name: 'B.Sc Physics with Electronics', category: 'DEGREE' },
