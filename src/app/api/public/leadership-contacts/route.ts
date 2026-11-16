@@ -5,7 +5,11 @@ export const dynamic = 'force-dynamic';
 
 const PUBLIC_LEADERSHIP_OFFICES = [
   'General Coordinator',
+  // Kept alongside the two split offices below so a profile that hasn't
+  // been updated to the new "1" / "2" split yet still shows up here.
   'Assistant General Coordinator',
+  'Assistant General Coordinator 1',
+  'Assistant General Coordinator 2',
   'Secretarial Coordinator',
   'Follow-Up Coordinator',
 ] as const;

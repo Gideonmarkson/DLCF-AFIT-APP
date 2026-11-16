@@ -47,7 +47,8 @@ export const AFIT_DEPARTMENTS: AFITDepartment[] = [
 
 export const DLCF_EXCO_PORTFOLIOS = [
   'General Coordinator',
-  'Assistant General Coordinator',
+  'Assistant General Coordinator 1',
+  'Assistant General Coordinator 2',
   'Sister Welfare Coordinator',
   'Secretarial Coordinator',
   'Maintenance coordinator',

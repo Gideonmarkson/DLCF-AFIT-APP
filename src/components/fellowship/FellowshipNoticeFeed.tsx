@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { MessageSquare, Pin, Send, ThumbsUp } from 'lucide-react';
+import { MessageSquare, Pin, Send, ThumbsUp, Trash2 } from 'lucide-react';
 
 import {
   Card,
@@ -20,7 +20,12 @@ import { createClient } from '@/lib/supabase/client';
 
 const TOP_LEADERSHIP_OFFICES = [
   'General Coordinator',
+  // 'Assistant General Coordinator' (the old, unsplit value) is kept here
+  // so anyone whose profile hasn't been updated to the new "1" / "2" split
+  // yet keeps their Pin/Delete access without interruption.
   'Assistant General Coordinator',
+  'Assistant General Coordinator 1',
+  'Assistant General Coordinator 2',
   'Secretarial Coordinator',
 ];
 
@@ -63,9 +68,10 @@ export function FellowshipNoticeFeed() {
     userRole === 'STUDENT_EXECUTIVE' ||
     userRole === 'ASSOCIATE_COORDINATOR';
 
-  const canPin = allOffices(profile.executiveOffice, profile.additionalOffices).some((office) =>
+  const isTopLeadership = allOffices(profile.executiveOffice, profile.additionalOffices).some((office) =>
     TOP_LEADERSHIP_OFFICES.includes(office)
   );
+  const canPin = isTopLeadership;
 
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [authorNames, setAuthorNames] = useState<Record<string, string>>({});
@@ -321,6 +327,28 @@ export function FellowshipNoticeFeed() {
     await loadFeed();
   };
 
+  const canDeletePost = (post: ForumPost) => post.author_id === userId || isTopLeadership;
+
+  const handleDeletePost = async (post: ForumPost) => {
+    const confirmed = window.confirm(
+      post.author_id === userId
+        ? 'Delete this post? This cannot be undone.'
+        : `Delete "${post.title}"? This cannot be undone, and the author will not be separately notified.`
+    );
+    if (!confirmed) return;
+
+    setError('');
+
+    const { error: deleteError } = await supabase.from('forum_posts').delete().eq('id', post.id);
+
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+
+    setPosts((current) => current.filter((p) => p.id !== post.id));
+  };
+
   const toggleComments = async (postId: string) => {
     setOpenComments((current) => {
       const next = new Set(current);
@@ -541,15 +569,26 @@ export function FellowshipNoticeFeed() {
                       </button>
                     </div>
 
-                    {canPin && (
-                      <button
-                        onClick={() => togglePin(post)}
-                        className="flex items-center gap-1 text-[11px] text-[#9CA3AF] hover:text-amber-600 font-semibold"
-                      >
-                        <Pin className="w-3.5 h-3.5" />
-                        {post.is_pinned ? 'Unpin' : 'Pin'}
-                      </button>
-                    )}
+                    <div className="flex items-center gap-3">
+                      {canPin && (
+                        <button
+                          onClick={() => togglePin(post)}
+                          className="flex items-center gap-1 text-[11px] text-[#9CA3AF] hover:text-amber-600 font-semibold"
+                        >
+                          <Pin className="w-3.5 h-3.5" />
+                          {post.is_pinned ? 'Unpin' : 'Pin'}
+                        </button>
+                      )}
+                      {canDeletePost(post) && (
+                        <button
+                          onClick={() => handleDeletePost(post)}
+                          className="flex items-center gap-1 text-[11px] text-[#9CA3AF] hover:text-rose-600 font-semibold"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {commentsOpen && (
